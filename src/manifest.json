@@ -1,0 +1,17 @@
+{
+    "manifest_version": 3,
+    "version": "0.0.1",
+    "name": "Bookmarks quick view",
+    "description": "Bookmarks quick view",
+    "author": "axarsar",
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "History quick view"
+    },
+    "permissions": [
+        "favicon",
+        "storage",
+        "tabs",
+        "bookmarks"
+    ]
+}
