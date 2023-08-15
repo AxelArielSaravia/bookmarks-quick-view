@@ -9,11 +9,11 @@
 <body>
     <header class="header c_space-between-children">
         <h1>Bookmarks Quick View</h1>
-        <div class="right">
+        <div id="header_buttons" class="right">
             <button
-                id="button_bookmark"
-                class="c_center-children"
-                title="Bookmarks Manager"
+                data-button="0"
+                class="c_center-children c_shell"
+                title="Go to Bookmarks"
                 type="button"
             >
                 <svg
@@ -31,7 +31,12 @@
                     <path d="M15 11l-3-3-3 3V2h6z"/>
                 </svg>
             </button>
-            <button id="button_more" class="c_center-children" title="more" type="button">
+            <button
+                data-button="1"
+                class="c_center-children c_shell"
+                title="More"
+                type="button"
+            >
                 <svg
                     class="icon icon-more"
                     xmlns="http://www.w3.org/2000/svg"
@@ -47,18 +52,77 @@
                     <circle cx="5" cy="12" r="1"></circle>
                 </svg>
             </button>
+            <button
+                data-button="2"
+                class="c_center-children c_shell"
+                title="Close"
+                type="button"
+            >
+                <svg
+                    class="icon icon-x"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
         </div>
     </header>
+    <div id="message_undo" class="message-undo" data-display="0">
+        "<span class="content"></span>"
+        <span class="type">removed</span>
+        <div class="right">
+            <button
+                data-button="0"
+                class="undo c_center-children c_shell"
+                type="button"
+            >
+                undo
+            </button>
+            <button
+                data-button="1"
+                class="close c_center-children c_shell"
+                title="Close"
+                type="button"
+                >
+                <svg
+                    class="icon icon-x"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    >
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
     <main id="main">
     </main>
-    <div id="modal_config" class="modal" data-type="8" data-display="0">
+    <div
+        id="modal"
+        class="modal"
+        data-type="4"
+        data-display="0"
+        data-show=""
+    >
         <section class="config">
             <h2 class="c_space-between-children">
                 Configuration
                 <button
-                    class="close c_center-children"
-                    data-type="7"
-                    title="close"
+                    class="close c_center-children c_shell"
+                    data-type="10"
+                    title="Close"
                     type="button"
                 >
                     <svg
@@ -89,19 +153,26 @@
                 <p title="When a new tab is opens, go to it (focus it) or stay in your current tab">
                     Focus opened tabs:
                 </p>
-                <select id="modal_config-focus" name="focus">
-                    <option value="0">No</option>
-                    <option value="1">Yes</option>
-                </select>
+                <input id="modal_config-focus" name="focus" type="checkbox">
+            </div>
+            <div class="field focus-tabs c_space-between-children">
+                <p>Sort folders before links:</p>
+                <input
+                    id="modal_config-folders"
+                    name="folders"
+                    type="checkbox"
+                    checked
+                >
             </div>
             <hr/>
             <div class="socials c_space-between-children">
                 <p>created by&#160;<strong>Axel Ariel Saravia</strong></p>
                 <a
                     class="c_center-children"
-                    href="https://github.com/AxelArielSaravia"
+                    href="https://github.com/AxelArielSaravia/bookmarks-quick-view"
                     target="_blank"
                     rel="noreferrer noopener"
+                    aria-label="github"
                 >
                     <svg
                         class="icon icon-github"
@@ -118,12 +189,15 @@
                 </a>
             </div>
         </section>
-    </div>
-    <div id="modal_edit" class="modal" data-type="8" data-display="0">
-        <section class="edit">
+        <section class="edit" data-edit="0">
             <h2 class="c_space-between-children">
-                Edit
-                <button class="close" data-type="7" title="close" type="button">
+                <span>Edit</span>
+                <button
+                    class="close c_center-children c_shell"
+                    data-type="10"
+                    title="Close"
+                    type="button"
+                >
                     <svg
                         class="icon icon-x"
                         xmlns="http://www.w3.org/2000/svg"
@@ -139,6 +213,19 @@
                     </svg>
                 </button>
             </h2>
+            <form id="modal_form">
+                <label class="title">
+                    <p>Title:</p>
+                    <input type="text" name="title" value="">
+                </label>
+                <label class="url">
+                    <p>Url:</p>
+                    <input type="url" name="url" value="">
+                </label>
+                <button class="c_bold c_shell" type="submit">
+                    Done
+                </button>
+            </form>
         </section>
     </div>
     <template id="template_dir">
@@ -148,12 +235,11 @@
             data-open="0"
             data-id=""
             data-type="0"
-            data-index=""
-            data-dragenter="0"
-            draggable="true"
+            data-display="1"
+            data-depth="0"
         >
             <div class="header">
-                <button class="content" data-type="1" type="button">
+                <button class="content c_shell" data-type="1" type="button">
                     <svg
                         class="icon icon-triangle"
                         xmlns="http://www.w3.org/2000/svg"
@@ -184,8 +270,8 @@
                         </svg>
                         <h3 class="title"></h3>
                 </button>
-                <div class="shell" data-type="1"></div>
-                <div class="right"></div>
+                <div class="right" data-parent="0"></div>
+                <div class="more" data-parent="0"></div>
             </div>
         </div>
     </template>
@@ -195,29 +281,29 @@
             data-type="2"
             title=""
             data-id=""
-            data-index=""
-            data-dragenter="0"
+            data-display="1"
+            data-depth="0"
             draggable="true"
         >
             <a
-                class="content"
-                href=""
+                class="content c_shell"
                 data-type="3"
+                href=""
                 target="_blank"
                 rel="noopener noreferrer"
+                draggable="true"
             >
                 <img class="favicon" src="" alt="favicon" width="16" height="16">
                 <p class="title"></p>
             </a>
-            <div class="shell" data-type="3"></div>
-            <div class="right"></div>
+            <div class="right" data-parent="2"></div>
         </div>
     </template>
     <template id="template_buttons">
         <button
-            class="bbookmark c_center-children"
-            data-type="4"
-            title="bookmark this tab inside"
+            class="bbookmark c_center-children c_shell"
+            data-type="5"
+            title="Add this tab inside"
             type="button"
         >
             <svg
@@ -234,9 +320,9 @@
             </svg>
         </button>
         <button
-            class="bfolder c_center-children"
-            data-type="5"
-            title="create a folder inside"
+            class="bfolder c_center-children c_shell"
+            data-type="6"
+            title="Create a folder inside"
             type="button"
         >
             <svg
@@ -253,9 +339,9 @@
             </svg>
         </button>
         <button
-            class="bedit c_center-children"
-            data-type="6"
-            title="edit"
+            class="bedit c_center-children c_shell"
+            data-type="7"
+            title="Edit"
             type="button"
         >
             <svg
@@ -273,9 +359,52 @@
             </svg>
         </button>
         <button
-            class="bremove c_center-children"
-            data-type="7"
-            title="remove"
+            class="bmore c_center-children c_shell"
+            data-type="8"
+            title="More"
+            type="button"
+        >
+            <svg
+                class="icon icon-more"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            >
+                <circle cx="12" cy="12" r="1"></circle>
+                <circle cx="19" cy="12" r="1"></circle>
+                <circle cx="5" cy="12" r="1"></circle>
+            </svg>
+        </button>
+        <button
+            class="bsort c_shell"
+            data-type="9"
+            title="Sort A-Z"
+            type="button"
+        >
+            <svg
+                class="icon icon-align-center"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            >
+                <line x1="18" y1="10" x2="6" y2="10"></line>
+                <line x1="21" y1="6" x2="3" y2="6"></line>
+                <line x1="21" y1="14" x2="3" y2="14"></line>
+                <line x1="18" y1="18" x2="6" y2="18"></line>
+            </svg>
+        </button>
+        <button
+            class="bremove c_shell"
+            data-type="10"
+            title="Remove"
             type="button"
         >
             <svg
@@ -291,6 +420,33 @@
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
+        </button>
+        <button
+            class="bopen c_shell"
+            data-type="11"
+            title="Open all"
+            type="button"
+
+        >
+            Open all
+        </button>
+        <button
+            class="bopen c_shell"
+            data-type="12"
+            title="Open all in new window"
+            type="button"
+
+        >
+            Open all in new window
+        </button>
+        <button
+            class="bopen c_shell"
+            data-type="13"
+            title="Open all in incognito"
+            type="button"
+
+        >
+            Open all in incognito
         </button>
     </template>
 </body>

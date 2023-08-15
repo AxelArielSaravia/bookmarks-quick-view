@@ -7,6 +7,8 @@
     --color-hover: #4f4d4d;
     --color-hover-l: #656363;
 
+    --header-height: 52px;
+
     --icon-size-n: 20px;
     --icon-size-s: 15px;
 
@@ -16,6 +18,8 @@
 
     --e-height: 35px;
     --e-padding: 0 10px;
+
+    --rb-right: 5px;
 
     --root-padding: 5px;
 
@@ -60,8 +64,22 @@ a,button {
     box-shadow: unset;
 }
 
-[data-display="0"]{
+[data-display="0"] {
     display: none !important;
+}
+
+[data-visible="0"] {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}
+
+.c_bold {
+    font-weight: 600;
 }
 
 .c_center-children {
@@ -76,7 +94,18 @@ a,button {
     justify-content: space-between;
 }
 
+.c_shell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
 /*Components*/
+
+
+/* header */
 
 header {
     padding: 10px;
@@ -91,20 +120,78 @@ header .right {
     display:flex;
 }
 
-header button {
+header .right button {
+    position: relative;
     padding: 5px;
 }
 
-header button:not(:hover){
+header .right button:not(:hover){
     background: transparent;
 }
 
-header button:hover {
+header .right button:hover {
     background: var(--color-hover);
 }
-header button .icon {
+
+header .right button .icon {
     width: var(--icon-size-n);
 }
+
+/* message delete */
+
+.message-undo {
+    --mu-padding: 10px;
+    position: fixed;
+    z-index: 3;
+    transform: translate(5%, 5px);
+    display: flex;
+    width: 90%;
+    background: var(--color-bg-d);
+    padding: var(--mu-padding);
+    font-size: var(--font-size-n);
+}
+
+.message-undo .content {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.message-undo .type {
+    padding: 0 80px 0 10px;
+}
+
+.message-undo .right {
+    display: flex;
+    position: absolute;
+    right: var(--mu-padding);
+}
+
+.message-undo .right button {
+    position:relative;
+}
+
+.message-undo .right .undo {
+    margin-right: 10px;
+}
+.message-undo .right .close {
+    padding: 0;
+}
+
+.message-undo .right button .icon {
+    width: var(--icon-size-s);
+}
+
+.message-undo .right button:hover {
+    background: var(--color-hover-l);
+}
+
+.message-undo .right button:not(:hover) {
+    background: var(--color-hover);
+}
+
+
+/* main */
 
 main {
     overflow: auto;
@@ -122,111 +209,32 @@ main::-webkit-scrollbar-thumb {
     background-color:var(--color-hover-l);
 }
 
-.dir {
-    position: relative;
-}
 
-.dir>.header:hover {
-    background: var(--color-hover);
-}
-
-.dir>.header>.content {
-    background: transparent;
-}
-
-.dir>.header>.content :is(.icon-folder, .icon-folder-open) {
-    width: var(--icon-size-n);
-    margin: 0 5px;
-}
-
-.dir>.header>.content>.icon-triangle {
-    padding: 2px;
-    width: var(--icon-size-s);
-}
-
-.dir>.header>.content>.icon-triangle {
-    transition: transform 200ms ease-out;
-}
-.dir[data-open="0"]>.header>.content>.icon-triangle {
-    transform: rotate(90deg);
-}
-.dir[data-open="1"]>.header>.content>.icon-triangle {
-    transform: rotate(180deg);
-}
-
-
-:where(
-    .dir[data-open="0"]>.header>.content>.icon-folder,
-    .dir[data-open="1"]>.header>.content>.icon-folder-open
-) {
-    display: block;
-}
-:where(
-    .dir[data-open="1"]>.header>.content>.icon-folder,
-    .dir[data-open="0"]>.header>.content>.icon-folder-open
-) {
-    display: none;
-}
-
-.dir>.header>.content>.title {
-    font-size: var(--font-size-n);
-}
-
-.shell {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    cursor:pointer;
-}
+/* dir and item */
 
 [data-dragenter="1"] {
     border-top: 2px solid green;
-}
-
-:is(.dir, .item) .right {
-    display: flex;
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: var(--color-hover);
-}
-
-:is(.dir, .item) .right button {
-    padding: 5px;
-}
-:is(.dir, .item) .right button:not(:hover) {
-    background: transparent;
-}
-:is(.dir, .item) .right button:hover {
-    background: var(--color-hover-l);
-}
-:is(.dir, .item) .right button>.icon {
-    width: var(--icon-size-s);
 }
 
 .dir[data-open="0"]>:is(.dir, .item) {
     display: none;
 }
 
-:is(.dir>.header, .item) {
-    position:relative;
-    width: 100%;
+.dir[data-open="1"]>.header {
+    position:sticky;
+    z-index: 2;
+    top: -5px;
+    background-color: var(--color-bg);
+}
+:is(.dir:not([data-open="1"])>.header, .item) {
+    position: relative;
 }
 
-:is(
-    .dir>.header:not(:hover),
-    .item:not(:hover)
-) .right {
-    display: none;
-}
-
-:is(.dir>.header:hover, .item:hover) {
+:is(.dir>.header, .item):hover {
     background: var(--color-hover);
 }
 
-:is(.dir>.header>.content,.item a) {
+:is(.dir>.header,.item) .content {
     position: relative;
     display: flex;
     align-items: center;
@@ -237,6 +245,140 @@ main::-webkit-scrollbar-thumb {
     outline-offset: -1px;
 }
 
+:is(.dir>.header,.item):not(:hover) .right {
+    display: none;
+}
+
+:is(.dir>.header, .item):hover .right {
+    display: flex;
+}
+
+:is(.dir>.header, .item) .right {
+    position: absolute;
+    top: 5px;
+    right: var(--rb-right);
+    background: var(--color-hover);
+}
+
+:is(.dir>.header, .item) .right::after {
+    content:"";
+    position: absolute;
+    height: 100%;
+    width: 10px;
+    left: -10px;
+    background: linear-gradient(to left, var(--color-hover), transparent);
+}
+
+:is(.dir, .item) .right>button {
+    position: relative;
+    padding: 5px;
+}
+
+:is(.dir, .item) .right>button:not(:hover) {
+    background: transparent;
+}
+
+:is(.dir, .item) .right>button:hover {
+    background: var(--color-hover-l);
+}
+
+:is(.dir, .item) :is(.right,.more) button>.icon {
+    width: var(--icon-size-s);
+}
+
+/* dir */
+
+.dir {
+    position: relative;
+}
+
+.dir>.header>button {
+    position: relative;
+    background: transparent;
+}
+
+.dir>.header .content :is(.icon-folder, .icon-folder-open) {
+    width: var(--icon-size-n);
+    margin: 0 5px;
+}
+
+.dir>.header .content .icon-triangle {
+    padding: 2px;
+    width: var(--icon-size-s);
+}
+
+.dir>.header .content .icon-triangle {
+    transition: transform 200ms ease-out;
+}
+
+.dir[data-open="0"]>.header .content .icon-triangle {
+    transform: rotate(90deg);
+}
+
+.dir[data-open="1"]>.header .content .icon-triangle {
+    transform: rotate(180deg);
+}
+
+:where(
+    .dir[data-open="0"]>.header .content .icon-folder,
+    .dir[data-open="1"]>.header .content .icon-folder-open
+) {
+    display: block;
+}
+
+:where(
+    .dir[data-open="1"]>.header .content .icon-folder,
+    .dir[data-open="0"]>.header .content .icon-folder-open
+) {
+    display: none;
+}
+
+.dir>.header .content .title {
+    font-size: var(--font-size-n);
+}
+
+:is(
+.dir>.header:has( .right .bmore:hover) .more:not(:hover),
+.dir>.header .more:hover
+) {
+    display: flex;
+    flex-direction: column;
+}
+.dir>.header:has( .right .bmore:not(:hover)) .more:not(:hover) {
+    display: none;
+}
+
+.dir>.header:has( .more:hover) .right .bmore {
+    background: var(--color-hover-l);
+}
+
+.dir>.header .more {
+    position: absolute;
+    right: var(--rb-right);
+    z-index: 1;
+}
+
+.dir>.header .more>button {
+    position:relative;
+    display:flex;
+    align-items:Center;
+    font-size: var(--font-size-n);
+    padding: 5px 10px;
+}
+
+.dir>.header .more>button:not(:hover) {
+    background: var(--color-hover-l);
+}
+
+.dir>.header .more>button:hover {
+    background: var(--color-hover);
+}
+
+.dir>.header .more .icon {
+    margin-right: 5px;
+}
+
+/* item */
 
 .item .title {
     padding:0 10px;
@@ -245,6 +387,7 @@ main::-webkit-scrollbar-thumb {
     text-overflow: ellipsis;
     font-size: var(--font-size-s)
 }
+
 
 /* Modals */
 
@@ -256,7 +399,7 @@ main::-webkit-scrollbar-thumb {
     position: absolute;
     height: 100%;
     width: 100%;
-    z-index:1;
+    z-index: 3;
     inset: 0;
     align-items: center;
     justify-content: center;
@@ -274,7 +417,10 @@ main::-webkit-scrollbar-thumb {
     position: absolute;
     background: var(--color-bg);
     padding: 10px;
-    top: 52px;
+}
+
+.modal .icon {
+    width: var(--icon-size-n);
 }
 
 .modal :is(button,a) {
@@ -289,12 +435,30 @@ main::-webkit-scrollbar-thumb {
     background-color: transparent;
 }
 
-.modal .icon {
-    width: var(--icon-size-n);
+.modal button {
+    position: relative;
 }
 
-.modal .config {
+/* modalConfig and modalEdit */
+
+
+.modal:not([data-show="0"]) .config {
+    display: none;
+}
+.modal:not([data-show="1"]) .edit {
+    display: none;
+}
+.modal:not([data-show="2"]) .create {
+    display: none;
+}
+
+.modal :is(.config,.edit) {
     width: 300px;
+}
+/* modalConfig */
+
+.modal .config {
+    top: var(--header-height);
 }
 
 .modal .config :is(h2,p) {
@@ -309,10 +473,50 @@ main::-webkit-scrollbar-thumb {
     padding: 10px;
 }
 
+.modal .config .field input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+}
+
 .modal .config hr {
     margin: 10px 0;
 }
 
 .modal .config .socials {
     padding-top: 5px;
+}
+
+/* modalEdit */
+
+.modal .edit :is(h2, label) {
+    padding-bottom: 10px;
+}
+
+.modal .edit form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.modal .edit[data-edit="0"] .url {
+    display:none;
+}
+
+.modal .edit label {
+    width: 100%;
+}
+
+.modal .edit label:focus-within p {
+    font-weight: 600;
+}
+
+.modal .edit label p {
+    font-size: var(--font-size-s);
+    padding-bottom: 5px;
+}
+
+.modal .edit label input {
+    font-size: var(--font-size-n);
+    width: 100%;
+    padding: 3px;
 }
