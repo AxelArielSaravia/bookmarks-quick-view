@@ -3,7 +3,8 @@ created by Axel Ariel Saravia
 
 ---
 
-[*Bookmarks quick view*](https://chrome.google.com/webstore/detail/bookmarks-quick-view/oboploabbffifnkmiipmbpoaihabhjpm?hl=en) is a simple chrome extensions for use and manage simple tasks with your browser history data.
+[*Bookmarks quick view*](https://chrome.google.com/webstore/detail/bookmarks-quick-view/oboploabbffifnkmiipmbpoaihabhjpm?hl=en) 
+is a simple chrome extensions for use and manage simple tasks with your browser bookmarks.
 
 This extension is created for my own necessities. If you have some bugs or you need other utilities please contact me.
 
