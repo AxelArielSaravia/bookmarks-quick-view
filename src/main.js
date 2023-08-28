@@ -972,8 +972,14 @@ function DOMMainOnpointerover(e) {
     if (DOMType === DOM_BMORE_V) {
         var DOMDir = target.parentElement.parentElement.parentElement;
         var DOMMore = target.parentElement.nextElementSibling;
-        //85 is the height of the DirHeader + the height of DirMore - 2px'/home/axarisar/Documents/bookmarks_14_08_2023.html' 
-        var top = DOM.main.offsetHeight + DOM.main.scrollTop - 85;
+        var top = (
+            DOM.main.offsetHeight
+            + DOM.main.scrollTop
+            - (
+                DOMMore.offsetHeight
+                + target.parentElement.parentElement.offsetHeight //DirHeader
+            )
+        );
         if (top < DOMDir.offsetTop) {
             DOMMore.style.setProperty("top", "unset");
             DOMMore.style.setProperty("bottom", "30px");
