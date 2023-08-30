@@ -6,7 +6,6 @@ const CREATE_V = "1";
 
 const DOM_TYPE_ATTR = "data-type";
 const DOM_DIR_V = "0";
-const DOM_DIRCONTENT_V = "1";
 const DOM_ITEM_V = "2";
 const DOM_ITEMCONTENT_V = "3";
 const DOM_MODAL_V = "4";
@@ -488,36 +487,60 @@ function mainGetTree(data) {
     var DOMBFolder = DOMButtons[1];
     var DOMBSort = DOMButtons[4];
 
-    for (var i = 0; i < children.length; i += 1) {
-        var child = children[i];
-        var DOMRoot = createDOMDir(child, 1, DOM.templateDir, undefined);
-        if (i == 0) {
-            DOMRoot.setAttribute("data-open", "1");
-        }
-        var DOMRight = DOMRoot.firstElementChild.children[1];
+    //Bookmarks
+    var child = children[0];
+    var DOMRoot = createDOMDir(child, 1, DOM.templateDir, undefined);
+    var DOMRight = DOMRoot.firstElementChild.children[1];
+    var CloneDOMBSort = DOMBSort.cloneNode(true);
 
-        var CloneDOMBSort = DOMBSort.cloneNode(true);
-        CloneDOMBSort.classList.add("c_center-children");
+    DOMRoot.setAttribute("open", "true");
 
-        DOMRight.appendChild(DOMBBookmark.cloneNode(true));
-        DOMRight.appendChild(DOMBFolder.cloneNode(true));
-        DOMRight.appendChild(CloneDOMBSort);
+    CloneDOMBSort.classList.add("c_center-children");
 
-        if (child.children !== undefined
-            && child.children.length > 0
-        ) {
-            BTNToDOM(
-                child,
-                1,
-                DOMRoot,
-                DOM.templateDir,
-                DOM.templateItem,
-                DOM.templateButtons
-            );
-        }
+    DOMRight.appendChild(DOMBBookmark.cloneNode(true));
+    DOMRight.appendChild(DOMBFolder.cloneNode(true));
+    DOMRight.appendChild(CloneDOMBSort);
 
-        DOM.fragment.appendChild(DOMRoot);
+    if (child.children !== undefined
+        && child.children.length > 0
+    ) {
+        BTNToDOM(
+            child,
+            1,
+            DOMRoot,
+            DOM.templateDir,
+            DOM.templateItem,
+            DOM.templateButtons
+        );
     }
+    DOM.fragment.appendChild(DOMRoot);
+
+    //Other booksmarks
+    child = children[1];
+    DOMRoot = createDOMDir(child, 1, DOM.templateDir, undefined);
+    DOMRight = DOMRoot.firstElementChild.children[1];
+    CloneDOMBSort = DOMBSort.cloneNode(true);
+
+    CloneDOMBSort.classList.add("c_center-children");
+
+    DOMRight.appendChild(DOMBBookmark.cloneNode(true));
+    DOMRight.appendChild(DOMBFolder.cloneNode(true));
+    DOMRight.appendChild(CloneDOMBSort);
+
+    if (child.children !== undefined
+        && child.children.length > 0
+    ) {
+        BTNToDOM(
+            child,
+            1,
+            DOMRoot,
+            DOM.templateDir,
+            DOM.templateItem,
+            DOM.templateButtons
+        );
+    }
+    DOM.fragment.appendChild(DOMRoot);
+
     DOM.main.appendChild(DOM.fragment);
 }
 
@@ -951,15 +974,6 @@ function DOMMainOnclick(e) {
             e.preventDefault();
             var href = target.getAttribute("href");
             openLink(href, e.ctrlKey);
-        }
-    } else if (DOMType === DOM_DIRCONTENT_V) {
-        e.preventDefault();
-        let DOMDir = target.parentElement.parentElement;
-        const open = DOMDir.getAttribute("data-open");
-        if (open === "0") {
-            DOMDir.setAttribute("data-open", "1");
-        } else {
-            DOMDir.setAttribute("data-open", "0");
         }
     }
 }

@@ -27,6 +27,12 @@
 
     accent-color: #3d3d3d;
     color-scheme: dark;
+
+    background: #000;
+    display:flex;
+    align-items:center;
+    justify-content: center;
+    height: 100vh;
 }
 
 /*General*/
@@ -212,21 +218,18 @@ main::-webkit-scrollbar-thumb {
 
 /* dir and item */
 
-[data-dragenter="1"] {
-    border-top: 2px solid green;
-}
-
 .dir[data-open="0"]>:is(.dir, .item) {
     display: none;
 }
 
-.dir[data-open="1"]>.header {
+.dir[open]>.header {
     position:sticky;
     z-index: 2;
     top: -5px;
     background-color: var(--color-bg);
 }
-:is(.dir:not([data-open="1"])>.header, .item) {
+
+:is(.dir:not([open])>.header, .item) {
     position: relative;
 }
 
@@ -272,6 +275,7 @@ main::-webkit-scrollbar-thumb {
 :is(.dir, .item) .right>button {
     position: relative;
     padding: 5px;
+    z-index: 1;
 }
 
 :is(.dir, .item) .right>button:not(:hover) {
@@ -290,6 +294,10 @@ main::-webkit-scrollbar-thumb {
 
 .dir {
     position: relative;
+}
+
+.dir>.header {
+    display:flex;
 }
 
 .dir>.header>button {
@@ -311,24 +319,24 @@ main::-webkit-scrollbar-thumb {
     transition: transform 200ms ease-out;
 }
 
-.dir[data-open="0"]>.header .content .icon-triangle {
+.dir:not([open])>.header .content .icon-triangle {
     transform: rotate(90deg);
 }
 
-.dir[data-open="1"]>.header .content .icon-triangle {
+.dir[open]>.header .content .icon-triangle {
     transform: rotate(180deg);
 }
 
 :where(
-    .dir[data-open="0"]>.header .content .icon-folder,
-    .dir[data-open="1"]>.header .content .icon-folder-open
+    .dir:not([open])>.header .content .icon-folder,
+    .dir[open]>.header .content .icon-folder-open
 ) {
     display: block;
 }
 
 :where(
-    .dir[data-open="1"]>.header .content .icon-folder,
-    .dir[data-open="0"]>.header .content .icon-folder-open
+    .dir[open]>.header .content .icon-folder,
+    .dir:not([open])>.header .content .icon-folder-open
 ) {
     display: none;
 }
@@ -404,6 +412,7 @@ main::-webkit-scrollbar-thumb {
     align-items: center;
     justify-content: center;
 }
+
 .modal::before {
     content: "";
     position: absolute;
