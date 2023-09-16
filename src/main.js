@@ -54,6 +54,9 @@ const DOM = {
     modal: null,
     /**
     @type {HTMLSelectElement | null} */
+    modalConfigTheme: null,
+    /**
+    @type {HTMLSelectElement | null} */
     modalConfigOpen: null,
     /**
     @type {HTMLInputElement | null} */
@@ -74,6 +77,9 @@ const StorageState = {
     foldersBefore: true,
     //open can be: "0" (current Tab) | "1" (new tab)
     open: "0",
+    /**
+    @type {"dark"|"light"}*/
+    theme: "dark"
 };
 
 
@@ -137,7 +143,7 @@ const SortState = {
     /**
     @type {HTMLDivElement | null}*/
     target: null,
-    parentId: ""
+    parentId: "",
 };
 
 const MoveOptions = {
@@ -160,6 +166,7 @@ function getStorage(items) {
     var open = items.open;
     var focusTabs = items.focusTabs;
     var foldersBefore = items.foldersBefore;
+    var theme = items.theme;
     var set = false;
     if (open === undefined) {
         set = true;
@@ -167,7 +174,7 @@ function getStorage(items) {
         StorageState.open = open;
         DOM.modalConfigOpen.value = open;
     }
-    if (focusTabs === undefined || typeof focusTabs !== "boolean") {
+    if (focusTabs === undefined) {
         set = true;
     } else {
         StorageState.focusTabs = focusTabs;
@@ -178,6 +185,12 @@ function getStorage(items) {
     } else {
         StorageState.folderBefore = foldersBefore;
         DOM.modalConfigFolders.checked = foldersBefore;
+    }
+    if (theme === undefined) {
+        set = true;
+    } else {
+        StorageState.theme = theme;
+        document.firstElementChild?.setAttribute("class", theme);
     }
     if (set) {
         chrome.storage.local.set(StorageState, undefined);
@@ -353,11 +366,10 @@ const createDOMDir = function (
 /**
 @type {(DOMDir: HTMLDivElement, title: string) => undefined} */
 function updateDOMDir(DOMDir, title) {
-    DOMDir
-        .firstElementChild
-        .firstElementChild
-        .lastElementChild
-        .textContent = title
+    const DOMDirTitle = (
+        DOMDir.firstElementChild.firstElementChild.lastElementChild
+    );
+    DOMDirTitle.textContent = title;
 }
 
 
@@ -779,10 +791,10 @@ function DOMBEditOnclick(target) {
     var id = "";
     ModalState.formType = EDIT_V;
     if (DOMType === DOM_DIR_V) {
-        DOMModalEdit
-            .firstElementChild
-            .firstElementChild
-            .textContent = "Edit folder";
+        let DOMModalEditTitle = (
+            DOMModalEdit.firstElementChild.firstElementChild
+        );
+        DOMModalEditTitle.textContent = "Edit folder";
         let DOMDir = DOMRight.parentElement.parentElement;
         ModalState.target = DOMDir;
         let dataid = DOMDir.getAttribute("data-id");
@@ -790,10 +802,10 @@ function DOMBEditOnclick(target) {
             id = dataid;
         }
     } else /*must be DOM_ITEM_V */ {
-        DOMModalEdit
-            .firstElementChild
-            .firstElementChild
-            .textContent = "Edit bookmark";
+        let DOMModalEditTitle = (
+            DOMModalEdit.firstElementChild.firstElementChild
+        );
+        DOMModalEditTitle.textContent = "Edit bookmark";
         let DOMItem = DOMRight.parentElement;
         ModalState.target = DOMItem;
         let dataid = DOMItem.getAttribute("data-id");
@@ -979,6 +991,20 @@ function DOMMainOnclick(e) {
 }
 
 /**
+@type {(e: MouseEvent) => undefined} */
+function DOMMainOnauxclick(e) {
+    var target = e.target;
+    var DOMType = target.getAttribute(DOM_TYPE_ATTR);
+    if (DOMType === DOM_ITEMCONTENT_V) {
+        e.preventDefault();
+        var href = target.getAttribute("href");
+        TabOptions.url = href;
+        TabOptions.active = StorageState.focusTabs;
+        chrome.tabs.create(TabOptions, undefined);
+    }
+}
+
+/**
 @type {(e: PointerEvent) => undefined} */
 function DOMMainOnpointerover(e) {
     var target = e.target;
@@ -1130,6 +1156,15 @@ function DOMModalFormOnsubmit(e) {
 
 /**
 @type {(e: Event) => undefined} */
+function DOMModalConfigThemeOnchange(e) {
+    var target = e.currentTarget;
+    StorageState.theme = target.value;
+    document.firstElementChild?.setAttribute("class", target.value);
+    chrome.storage.local.set(StorageState, undefined);
+}
+
+/**
+@type {(e: Event) => undefined} */
 function DOMModalConfigOpenOnchange(e) {
     var target = e.currentTarget;
     StorageState.open = target.value;
@@ -1160,8 +1195,10 @@ function futureMain(data) {
     DOM.headerButtons.onclick = DOMHeaderButtonsOnclick;
     DOM.messageUndo.lastElementChild.onclick = DOMMessageUndoOnclick;
     DOM.main.onclick = DOMMainOnclick;
+    DOM.main.onauxclick = DOMMainOnauxclick;
     DOM.main.onpointerover = DOMMainOnpointerover;
 
+    DOM.modalConfigTheme.onchange = DOMModalConfigThemeOnchange;
     DOM.modalConfigOpen.onchange = DOMModalConfigOpenOnchange;
     DOM.modalConfigFocus.onchange = DOMModalConfigFocusOnchange;
     DOM.modalConfigFolders.onchange = DOMModalConfigFoldersOnchange;
@@ -1206,6 +1243,10 @@ function main() {
     DOM.modalForm = document.getElementById("modal_form");
     if (DOM.modalForm === null) {
         panic("DOM.modalForm is null");
+    }
+    DOM.modalConfigTheme = document.getElementById("modal_config-theme");
+    if (DOM.modalConfigTheme === null) {
+        panic("DOM.modalConfigTheme is null");
     }
     DOM.modalConfigOpen = document.getElementById("modal_config-open");
     if (DOM.modalConfigOpen === null) {

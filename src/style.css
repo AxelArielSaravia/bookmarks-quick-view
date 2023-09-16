@@ -1,12 +1,5 @@
 :root {
     --font: verdada,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;
-    --color: #efe8e8;
-    --color-bg: #3d3d3d;
-    --color-bg-d: #2b2b2b;
-
-    --color-hover: #4f4d4d;
-    --color-hover-l: #656363;
-
     --header-height: 52px;
 
     --icon-size-n: 20px;
@@ -25,14 +18,33 @@
 
     font-size: var(--root-font-size);
 
-    accent-color: #3d3d3d;
-    color-scheme: dark;
-
     background: #000;
     display:flex;
     align-items:center;
     justify-content: center;
     height: 100vh;
+}
+
+:root.dark {
+    --color: #efe8e8;
+    --color-bg: #3d3d3d;
+    --color-bg-d: #2b2b2b;
+
+    --color-hover: #4f4d4d;
+    --color-hover-l: #656363;
+    accent-color: #3d3d3d;
+    color-scheme: dark;
+}
+
+:root.light {
+    --color: #3d3d3d;
+    --color-bg: #efe8e8;
+    --color-bg-d: #ddd6d6;
+
+    --color-hover: #fff7f7;
+    --color-hover-l: #ffffff;
+    accent-color: #efe8e8;
+    color-scheme: light;
 }
 
 /*General*/
@@ -117,6 +129,7 @@ header {
     padding: 10px;
     border-bottom: 2px solid var(--color-hover);
 }
+
 header h1 {
     font-size: var(--font-size-n);
     padding: 5px;
@@ -212,12 +225,11 @@ main::-webkit-scrollbar {
 
 main::-webkit-scrollbar-thumb {
     /* color of the scroll thumb */
-    background-color:var(--color-hover-l);
+    background-color:var(--color-hover);
 }
 
 
 /* dir and item */
-
 .dir[data-open="0"]>:is(.dir, .item) {
     display: none;
 }
@@ -291,7 +303,6 @@ main::-webkit-scrollbar-thumb {
 }
 
 /* dir */
-
 .dir {
     position: relative;
 }
@@ -352,6 +363,7 @@ main::-webkit-scrollbar-thumb {
     display: flex;
     flex-direction: column;
 }
+
 .dir>.header:has( .right .bmore:not(:hover)) .more:not(:hover) {
     display: none;
 }
