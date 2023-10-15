@@ -1,34 +1,35 @@
 //@ts-check browser
 
-const DOM_FORM_ATTR = "data-form";
-const EDIT_V = "0";
-const CREATE_V = "1";
+const ATTR_DATA_FORM = "data-form";
+const DATA_FORM_EDIT = "0";
+const DATA_FORM_CREATE = "1";
 
-const DOM_TYPE_ATTR = "data-type";
-const DOM_DIR_V = "0";
-const DOM_ITEM_V = "2";
-const DOM_ITEMCONTENT_V = "3";
-const DOM_MODAL_V = "4";
-const DOM_BBOOKMARK_V = "5";
-const DOM_BFOLDER_V = "6";
-const DOM_BEDIT_V = "7";
-const DOM_BMORE_V = "8"
-const DOM_BSORT_V = "9";
-const DOM_BREMOVE_V = "10";
-const DOM_BOPEN_V = "11";
-const DOM_BOPENW_V = "12";
-const DOM_BOPENI_V = "13";
+const ATTR_DATA_TYPE = "data-type";
+const DATA_TYPE_DIR = "0";
+const DATA_TYPE_SUMMARY = "1";
+const DATA_TYPE_ITEM = "2";
+const DATA_TYPE_ITEMCONTENT = "3";
+const DATA_TYPE_MODAL = "4";
+const DATA_TYPE_BBOOKMARK = "5";
+const DATA_TYPE_BFOLDER = "6";
+const DATA_TYPE_BEDIT = "7";
+const DATA_TYPE_BMORE = "8"
+const DATA_TYPE_BSORT = "9";
+const DATA_TYPE_BREMOVE = "10";
+const DATA_TYPE_BOPEN = "11";
+const DATA_TYPE_BOPENW = "12";
+const DATA_TYPE_BOPENI = "13";
 
-const DOM_BUTTONS_ATTR = "data-button";
+const ATTR_DATA_BUTTONS = "data-button";
 
-const DOM_HBOOKMARKS_V = "0";
-const DOM_HMORE_V = "1";
-const DOM_HCLOSE_V = "2";
+const DATA_BUTTONS_HBOOKMARKS = "0";
+const DATA_BUTTONS_HMORE = "1";
+const DATA_BUTTONS_HCLOSE = "2";
 
-const DOM_MUNDO_V = "0";
-const DOM_MCLOSE_V = "1";
+const DATA_BUTTONS_MUNDO = "0";
+const DATA_BUTTONS_MCLOSE = "1";
 
-const DOM_PADDING_V = 10;
+const PADDING_V = 10;
 
 const DOM = {
     /**
@@ -151,6 +152,7 @@ const MoveOptions = {
     parentId: ""
 };
 
+var DOMFocused = null;
 var CurrentTab = undefined;
 
 /**
@@ -158,7 +160,6 @@ var CurrentTab = undefined;
 const panic = function (message) {
     throw Error(message);
 }
-
 
 /**
 @type {(items: StorageState) => undefined} */
@@ -325,7 +326,7 @@ const createDOMDir = function (
 
     DOMDirButton.style.setProperty(
         "padding-left",
-        `${depth * DOM_PADDING_V}px`
+        `${depth * PADDING_V}px`
     );
 
     var DOMDirTitle = DOMDirButton.lastElementChild;
@@ -395,7 +396,7 @@ function createDOMItem(BTNode, depth, DOMTemplateItem, DOMTemplateButtons) {
     DOMItemContent.setAttribute("href", BTNode.url);
     DOMItemContent.style.setProperty(
         "padding-left",
-        `${depth * DOM_PADDING_V}px`
+        `${depth * PADDING_V}px`
     );
     var DOMItemImg = DOMItemContent.children[0];
 
@@ -560,18 +561,20 @@ function mainGetTree(data) {
 @type {(e: MouseEvent) => undefined} */
 function DOMHeaderButtonsOnclick(e) {
     var target = e.target;
-    var ButtonType = target.getAttribute(DOM_BUTTONS_ATTR);
+    var ButtonType = target.getAttribute(ATTR_DATA_BUTTONS);
     if (ButtonType === null) {
         panic("ButtonType is null");
     }
-    if (ButtonType === DOM_HBOOKMARKS_V) {
-        TabOptions.url = "chrome://bookmarks/";
+    if (ButtonType === DATA_BUTTONS_HBOOKMARKS) {
+        TabOptions.url = "about://bookmarks/";
         TabOptions.active = true;
         chrome.tabs.create(TabOptions, undefined);
-    } else if (ButtonType === DOM_HMORE_V) {
+    } else if (ButtonType === DATA_BUTTONS_HMORE) {
         DOM.modal.setAttribute("data-display", "1");
         DOM.modal.setAttribute("data-show", "0");
-    } else if (ButtonType === DOM_HCLOSE_V) {
+        DOM.modal.firstElementChild.children[1].lastElementChild.focus();
+        DOMFocused = target;
+    } else if (ButtonType === DATA_BUTTONS_HCLOSE) {
         window.close();
     }
 }
@@ -651,40 +654,48 @@ function undoItemRemoved(BTNode) {
     clearDeleteState();
 }
 
+function undo() {
+    if (DeleteState.timeout === undefined) {
+        console.warn("The undo action cannot be completed. The element was deleted");
+        clearDeleteState();
+        return;
+    }
+    clearTimeout(DeleteState.timeout);
+    if (DeleteState.target === null) {
+        panic("DeleteState.target is null");
+    }
+    var BTNode = DeleteState.BTNode;
+    if (BTNode === null) {
+        panic("DelteState.BTNode is null");
+    }
+    if (BTNode.children === undefined) {
+        CreateOptions.parentId = BTNode.parentId;
+        CreateOptions.url = BTNode.url;
+        CreateOptions.index = BTNode.index;
+        CreateOptions.title = BTNode.title;
+        chrome.bookmarks.create(CreateOptions, undoItemRemoved);
+    } else {
+        undoDirRemoved(BTNode, DeleteState.target);
+    }
+}
+
 /**
 @type {(e: MouseEvent) => undefined} */
 function DOMMessageUndoOnclick(e) {
     var target = e.target;
-    var buttonType = target.getAttribute(DOM_BUTTONS_ATTR);
+    var buttonType = target.getAttribute(ATTR_DATA_BUTTONS);
 
-    if (buttonType === DOM_MCLOSE_V) {
+    if (buttonType === DATA_BUTTONS_MCLOSE) {
         clearTimeout(DeleteState.timeout);
         DeleteState.target.remove();
         DOM.messageUndo.setAttribute("data-display", "0");
         clearDeleteState();
 
-    } else if (buttonType === DOM_MUNDO_V) {
-        if (DeleteState.timeout === undefined) {
-            console.warn("The undo action cannot be completed. The element was deleted");
-            clearDeleteState();
-            return;
-        }
-        clearTimeout(DeleteState.timeout);
-        if (DeleteState.target === null) {
-            panic("DeleteState.target is null");
-        }
-        var BTNode = DeleteState.BTNode;
-        if (BTNode === null) {
-            panic("DelteState.BTNode is null");
-        }
-        if (BTNode.children === undefined) {
-            CreateOptions.parentId = BTNode.parentId;
-            CreateOptions.url = BTNode.url;
-            CreateOptions.index = BTNode.index;
-            CreateOptions.title = BTNode.title;
-            chrome.bookmarks.create(CreateOptions, undoItemRemoved);
-        } else {
-            undoDirRemoved(BTNode, DeleteState.target);
+    } else if (buttonType === DATA_BUTTONS_MUNDO) {
+        undo();
+        if (DOMFocused !== null) {
+            DOMFocused.focus();
+            DOMFocused = null;
         }
     }
 }
@@ -711,6 +722,7 @@ function futureRemove(data) {
     DeleteState.BTNode = BTNode;
 
     DOM.messageUndo.setAttribute("data-display", "1");
+    DOM.messageUndo?.lastElementChild?.firstElementChild.focus();
 
     var DOMMessageUChildren = DOM.messageUndo.children;
     DOMMessageUChildren[0].textContent = BTNode.title;
@@ -743,14 +755,14 @@ function DOMBRemoveOnclick(target) {
     var DOMType = DOMRight.getAttribute("data-parent");
     var id = "";
 
-    if (DOMType === DOM_DIR_V) {
+    if (DOMType === DATA_TYPE_DIR) {
         var DOMDir = DOMRight.parentElement.parentElement;
         DOMDir.setAttribute("data-display", "0");
         id = DOMDir.getAttribute("data-id");
         DeleteState.target = DOMDir;
         chrome.bookmarks.getSubTree(id, futureRemove);
 
-    } else /*must be DOM_ITEM_V */ {
+    } else /*must be DATA_TYPE_ITEM */ {
         var DOMItem = DOMRight.parentElement;
         DOMItem.setAttribute("data-display", "0");
         id = DOMItem.getAttribute("data-id");
@@ -789,8 +801,8 @@ function DOMBEditOnclick(target) {
     var DOMRight = target.parentElement;
     var DOMType = DOMRight.getAttribute("data-parent");
     var id = "";
-    ModalState.formType = EDIT_V;
-    if (DOMType === DOM_DIR_V) {
+    ModalState.formType = DATA_FORM_EDIT;
+    if (DOMType === DATA_TYPE_DIR) {
         let DOMModalEditTitle = (
             DOMModalEdit.firstElementChild.firstElementChild
         );
@@ -801,7 +813,7 @@ function DOMBEditOnclick(target) {
         if (dataid !== null) {
             id = dataid;
         }
-    } else /*must be DOM_ITEM_V */ {
+    } else /*must be DATA_TYPE_ITEM */ {
         let DOMModalEditTitle = (
             DOMModalEdit.firstElementChild.firstElementChild
         );
@@ -831,15 +843,14 @@ function DOMBEditOnclick(target) {
     DOMType: "0" | "2",
     ctrKey: boolean
 ) => undefined | never} */
-function CreateOptionsOnclick(target, DOMType, ctrKey) {
-    var DOMDir = target.parentElement.parentElement.parentElement;
+function createOptionsOnclick(DOMDir, DOMType, ctrKey) {
     var DOMForm = DOM.modalForm;
     var id = DOMDir.getAttribute("data-id");
     if (id === null) {
         panic("id is null");
     }
     ModalState.parentId = id;
-    ModalState.formType = CREATE_V;
+    ModalState.formType = DATA_FORM_CREATE;
     ModalState.target = DOMDir;
 
     ModalState.depth = Number(DOMDir.getAttribute("data-depth"));
@@ -847,7 +858,7 @@ function CreateOptionsOnclick(target, DOMType, ctrKey) {
     var DOMModalCreateOptions = DOM.modal.children[1];
     DOMModalCreateOptions.setAttribute("data-edit", DOMType);
 
-    if (DOMType === DOM_DIR_V) {
+    if (DOMType === DATA_TYPE_DIR) {
         DOMModalCreateOptions
             .firstElementChild
             .firstElementChild
@@ -947,41 +958,43 @@ function DOMBOpenWOnclick(data) {
 @type {(e: MouseEvent) => undefined} */
 function DOMMainOnclick(e) {
     var target = e.target;
-    const DOMType = target.getAttribute(DOM_TYPE_ATTR);
-    if (DOMType === DOM_BREMOVE_V) {
+    const DOMType = target.getAttribute(ATTR_DATA_TYPE);
+    if (DOMType === DATA_TYPE_BREMOVE) {
         e.preventDefault();
         DOMBRemoveOnclick(target);
-    } else if (DOMType === DOM_BSORT_V) {
+    } else if (DOMType === DATA_TYPE_BSORT) {
         e.preventDefault();
         let DOMDir = target.parentElement.parentElement.parentElement;
         DOMBSortOnclick(DOMDir);
-    } else if (DOMType === DOM_BOPEN_V) {
+    } else if (DOMType === DATA_TYPE_BOPEN) {
         e.preventDefault();
         let DOMDir = target.parentElement.parentElement.parentElement;
         let id = DOMDir.getAttribute("data-id");
         chrome.bookmarks.getChildren(id, DOMBOpenOnclick);
-    } else if (DOMType === DOM_BOPENW_V) {
+    } else if (DOMType === DATA_TYPE_BOPENW) {
         e.preventDefault();
         let DOMDir = target.parentElement.parentElement.parentElement;
         let id = DOMDir.getAttribute("data-id");
         WindowOptions.incognito = false;
         chrome.bookmarks.getChildren(id, DOMBOpenWOnclick);
-    } else if (DOMType === DOM_BOPENI_V) {
+    } else if (DOMType === DATA_TYPE_BOPENI) {
         e.preventDefault();
         let DOMDir = target.parentElement.parentElement.parentElement;
         let id = DOMDir.getAttribute("data-id");
         WindowOptions.incognito = true;
         chrome.bookmarks.getChildren(id, DOMBOpenWOnclick);
-    } else if (DOMType === DOM_BEDIT_V) {
+    } else if (DOMType === DATA_TYPE_BEDIT) {
         e.preventDefault();
         DOMBEditOnclick(target);
-    } else if (DOMType === DOM_BFOLDER_V) {
+    } else if (DOMType === DATA_TYPE_BFOLDER) {
         e.preventDefault();
-        CreateOptionsOnclick(target, DOM_DIR_V, false);
-    } else if (DOMType === DOM_BBOOKMARK_V) {
+        let DOMDir = target.parentElement.parentElement.parentElement;
+        createOptionsOnclick(DOMDir, DATA_TYPE_DIR, false);
+    } else if (DOMType === DATA_TYPE_BBOOKMARK) {
         e.preventDefault();
-        CreateOptionsOnclick(target, DOM_ITEM_V, e.ctrlKey);
-    } else if (DOMType === DOM_ITEMCONTENT_V) {
+        let DOMDir = target.parentElement.parentElement.parentElement;
+        createOptionsOnclick(DOMDir, DATA_TYPE_ITEM, e.ctrlKey);
+    } else if (DOMType === DATA_TYPE_ITEMCONTENT) {
         if (!e.shiftKey) {
             e.preventDefault();
             var href = target.getAttribute("href");
@@ -991,11 +1004,66 @@ function DOMMainOnclick(e) {
 }
 
 /**
+@type {(e: KeyboardEvent) => undefined} */
+function DOMMainOnkeydown(e) {
+    var target = e.target;
+    var DOMTarget;
+    var type = target.getAttribute(ATTR_DATA_TYPE);
+    if (type === DATA_TYPE_SUMMARY) {
+        if (e.code === "KeyQ") {
+            DOMFocused = target;
+            DOMTarget = target?.lastElementChild?.lastElementChild;
+            if (DOMTarget !== null || DOMTarget !== undefined) {
+                DOMBRemoveOnclick(DOMTarget);
+            }
+        } else if (e.code === "KeyE") {
+            DOMFocused = target;
+            DOMTarget = target?.children[1]?.children[2];
+            if (DOMTarget.getAttribute(ATTR_DATA_TYPE) === DATA_TYPE_BEDIT) {
+                DOMBEditOnclick(DOMTarget);
+            }
+        } else if (e.code === "KeyC") {
+            e.preventDefault();
+            DOMFocused = target;
+            let DOMDir = target.parentElement;
+            createOptionsOnclick(DOMDir, DATA_TYPE_DIR, false);
+        } else if (e.code === "KeyA") {
+            e.preventDefault();
+            DOMFocused = target;
+            let DOMDir = target.parentElement;
+            createOptionsOnclick(DOMDir, DATA_TYPE_ITEM, e.ctrlKey);
+        } else if (e.code === "KeyS") {
+            DOMBSortOnclick(target.parentElement);
+        } else if (e.code === "KeyO") {
+            let id = target.parentElement.getAttribute("data-id");
+            if (id === "1" || id === "2") {
+                return;
+            }
+            if (e.shiftKey) {
+                WindowOptions.incognito = false;
+                chrome.bookmarks.getChildren(id, DOMBOpenWOnclick);
+            } else {
+                chrome.bookmarks.getChildren(id, DOMBOpenOnclick);
+            }
+        }
+    } else if (type === DATA_TYPE_ITEMCONTENT) {
+        if (e.code === "KeyQ") {
+            DOMFocused = target;
+            DOMBRemoveOnclick(target?.nextElementSibling?.lastElementChild);
+        } else if (e.code === "KeyE") {
+            DOMFocused = target;
+            DOMBEditOnclick(target?.nextElementSibling?.firstElementChild);
+        }
+    }
+
+}
+
+/**
 @type {(e: MouseEvent) => undefined} */
 function DOMMainOnauxclick(e) {
     var target = e.target;
-    var DOMType = target.getAttribute(DOM_TYPE_ATTR);
-    if (DOMType === DOM_ITEMCONTENT_V) {
+    var DOMType = target.getAttribute(ATTR_DATA_TYPE);
+    if (DOMType === DATA_TYPE_ITEMCONTENT) {
         e.preventDefault();
         var href = target.getAttribute("href");
         TabOptions.url = href;
@@ -1008,8 +1076,8 @@ function DOMMainOnauxclick(e) {
 @type {(e: PointerEvent) => undefined} */
 function DOMMainOnpointerover(e) {
     var target = e.target;
-    var DOMType = target.getAttribute(DOM_TYPE_ATTR);
-    if (DOMType === DOM_BMORE_V) {
+    var DOMType = target.getAttribute(ATTR_DATA_TYPE);
+    if (DOMType === DATA_TYPE_BMORE) {
         var DOMDir = target.parentElement.parentElement.parentElement;
         var DOMMore = target.parentElement.nextElementSibling;
         var top = (
@@ -1031,29 +1099,48 @@ function DOMMainOnpointerover(e) {
 }
 
 /**
+@type {() => undefined} */
+function closeDOMModal() {
+    var show = DOM.modal.getAttribute("data-show");
+    if (show === "1") {
+        if (ModalState.formType === DATA_FORM_CREATE) {
+            clearCreateOptions();
+        }
+        clearModalState();
+
+        var DOMModalEdit = DOM.modal.children[1];
+        DOMModalEdit.setAttribute("data-edit", "");
+
+        var DOMForm = DOM.modalForm;
+        DOMForm[0].value = "";
+        DOMForm[1].value = "";
+        DOM.modal.setAttribute("data-display", "0");
+        DOM.modal.setAttribute("data-show", "");
+    }
+    DOM.modal.setAttribute("data-display", "0");
+    DOM.modal.setAttribute("data-show", "");
+}
+
+/**
 @type {(e: MouseEvent) => undefined} */
 function DOMModalOnclick(e) {
     var target = e.target;
-    var domType = target.getAttribute(DOM_TYPE_ATTR);
-    if (domType == DOM_MODAL_V || domType === DOM_BREMOVE_V) {
-        var show = DOM.modal.getAttribute("data-show");
-        if (show === "1") {
-            if (ModalState.formType === CREATE_V) {
-                clearCreateOptions();
-            }
-            clearModalState();
+    var domType = target.getAttribute(ATTR_DATA_TYPE);
+    if (domType == DATA_TYPE_MODAL || domType === DATA_TYPE_BREMOVE) {
+        closeDOMModal();
+    }
+}
 
-            var DOMModalEdit = DOM.modal.children[1];
-            DOMModalEdit.setAttribute("data-edit", "");
-
-            var DOMForm = DOM.modalForm;
-            DOMForm[0].value = "";
-            DOMForm[1].value = "";
-            DOM.modal.setAttribute("data-display", "0");
-            DOM.modal.setAttribute("data-show", "");
+/**
+@type {(e: KeyboardEvent) => undefined} */
+function DOMModalOnkeydown(e) {
+    if (e.code === "Escape") {
+        e.preventDefault();
+        closeDOMModal();
+        if (DOMFocused !== null) {
+            DOMFocused.focus();
+            DOMFocused = null;
         }
-        DOM.modal.setAttribute("data-display", "0");
-        DOM.modal.setAttribute("data-show", "");
     }
 }
 
@@ -1079,6 +1166,7 @@ const BMNode = {
     title: "",
     url: "",
 };
+
 function clearBMNode() {
     BMNode.id = "";
     BMNode.title = "";
@@ -1125,9 +1213,9 @@ function DOMModalFormOnsubmit(e) {
     var DOMForm = DOM.modalForm;
     var DOMModal = DOM.modal?.children[1];
     var title = DOMForm[0].value;
-    if (ModalState.formType === EDIT_V) {
+    if (ModalState.formType === DATA_FORM_EDIT) {
         Changes.title = title;
-        if (ModalState.type === DOM_DIR_V) {
+        if (ModalState.type === DATA_TYPE_DIR) {
             Changes.url = "";
         } else{
             var url = DOMForm[1].value;
@@ -1137,7 +1225,7 @@ function DOMModalFormOnsubmit(e) {
     } else {
         CreateOptions.parentId = ModalState.parentId;
         CreateOptions.title = title;
-        if (ModalState.type === DOM_DIR_V) {
+        if (ModalState.type === DATA_TYPE_DIR) {
             CreateOptions.url = undefined;
         } else {
             var url = DOMForm[1].value;
@@ -1152,6 +1240,11 @@ function DOMModalFormOnsubmit(e) {
     DOMForm[1].value = "";
     DOM.modal.setAttribute("data-display", "0");
     DOM.modal.setAttribute("data-show", "");
+
+    if (DOMFocused !== null) {
+        DOMFocused.focus();
+        DOMFocused = null;
+    }
 }
 
 /**
@@ -1197,6 +1290,7 @@ function futureMain(data) {
     DOM.main.onclick = DOMMainOnclick;
     DOM.main.onauxclick = DOMMainOnauxclick;
     DOM.main.onpointerover = DOMMainOnpointerover;
+    DOM.main.onkeydown = DOMMainOnkeydown;
 
     DOM.modalConfigTheme.onchange = DOMModalConfigThemeOnchange;
     DOM.modalConfigOpen.onchange = DOMModalConfigOpenOnchange;
@@ -1204,6 +1298,7 @@ function futureMain(data) {
     DOM.modalConfigFolders.onchange = DOMModalConfigFoldersOnchange;
 
     DOM.modal.onclick = DOMModalOnclick;
+    DOM.modal.onkeydown = DOMModalOnkeydown;
     DOM.modalForm.onsubmit = DOMModalFormOnsubmit;
 
     chrome.bookmarks.getTree(mainGetTree);

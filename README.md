@@ -30,7 +30,15 @@ This extension is created for my own necessities. If you have some bugs or you n
 | --- | ---|
 | <kbd>Ctrl</kbd> + <kbd>Enter</kbd> or <kbd>Ctrl</kbd> + mouse click| Opens the url in a contrary way of the configurations
 | <kbd>Shift</kbd> + <kbd>Enter</kbd> or <kbd>Shift</kbd> + mouse click| Opens the url in a new windows |
-
+|--- | --- |
+| <kbd>R</kbd>| Remove the url or folder focused |
+| <kbd>E</kbd>| Edit the url or a folder focused |
+| <kbd>A</kbd>| Add the current tab inside the folder focused |
+| <kbd>A</kbd> + <kbd>Ctrl</kbd>| Add an url inside the folder focused |
+| <kbd>C</kbd>| Create a folder inside the folder focused |
+| <kbd>S</kbd>| Sort A-Z the folder focused |
+| <kbd>O</kbd>| Open all urls of the folder focused |
+| <kbd>O</kbd> + <kbd>Shift</kbd>| Open all urls of the folder focused on a new windows |
 ---
 
 The icons used in the extension are from [Feather Icons](https://feathericons.com/).
