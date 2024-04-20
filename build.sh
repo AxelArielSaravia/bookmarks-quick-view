@@ -4,17 +4,30 @@
 # Bun.js to bundle and minify javascript (https://bun.sh/)
 # tdewolff/minify to minify html, css and json (https://github.com/tdewolff/minify)
 
-bun build ./src/main.js --outdir ./extension --minify
-echo JS build and minified
+if [[ ! -d "./extension" ]]; then
+    mkdir ./extension
+fi
+
+if [[ ! -d "./extension/images" ]]; then
+    cp -dr ./src/images ./extension
+fi
+
+bun build ./src/main.js --outdir ./extension --minify-whitespace --minify-syntax
+if [[ $? == 0 ]]; then
+    echo JS build and minify
+fi
 
 minify -o ./extension/index.html ./src/index.html
-echo HTML minified success
+if [[ $? == 0 ]]; then
+    echo index.html minified success
+fi
 
 minify -o ./extension/style.css ./src/style.css
-echo CSS minified success
+if [[ $? == 0 ]]; then
+    echo index.css minified success
+fi
 
 minify -o ./extension/manifest.json ./src/manifest.json
-echo json minified success
-
-cp -dr ./src/images ./extension
-echo Images copyed success
+if [[ $? == 0 ]]; then
+    echo manifest.json minified success
+fi
