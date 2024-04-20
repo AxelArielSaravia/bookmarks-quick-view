@@ -1,4 +1,4 @@
-# /bin/bash
+#! /bin/bash
 
 #This Build use:
 # Bun.js to bundle and minify javascript (https://bun.sh/)

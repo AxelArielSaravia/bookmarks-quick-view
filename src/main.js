@@ -1010,7 +1010,7 @@ function DOMMainOnkeydown(e) {
     var DOMTarget;
     var type = target.getAttribute(ATTR_DATA_TYPE);
     if (type === DATA_TYPE_SUMMARY) {
-        if (e.code === "KeyQ") {
+        if (e.code === "KeyR") {
             DOMFocused = target;
             DOMTarget = target?.lastElementChild?.lastElementChild;
             if (DOMTarget !== null || DOMTarget !== undefined) {
@@ -1047,7 +1047,7 @@ function DOMMainOnkeydown(e) {
             }
         }
     } else if (type === DATA_TYPE_ITEMCONTENT) {
-        if (e.code === "KeyQ") {
+        if (e.code === "KeyR") {
             DOMFocused = target;
             DOMBRemoveOnclick(target?.nextElementSibling?.lastElementChild);
         } else if (e.code === "KeyE") {
