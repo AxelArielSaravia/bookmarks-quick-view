@@ -1,272 +1,195 @@
 //@ts-check browser
+"use strict";
 
-const ATTR_DATA_FORM = "data-form";
-const DATA_FORM_EDIT = "0";
-const DATA_FORM_CREATE = "1";
+const VERSION = "0.2.0";
 
-const ATTR_DATA_TYPE = "data-type";
-const DATA_TYPE_DIR = "0";
-const DATA_TYPE_SUMMARY = "1";
-const DATA_TYPE_ITEM = "2";
-const DATA_TYPE_ITEMCONTENT = "3";
-const DATA_TYPE_MODAL = "4";
-const DATA_TYPE_BBOOKMARK = "5";
-const DATA_TYPE_BFOLDER = "6";
-const DATA_TYPE_BEDIT = "7";
-const DATA_TYPE_BMORE = "8"
-const DATA_TYPE_BSORT = "9";
-const DATA_TYPE_BREMOVE = "10";
-const DATA_TYPE_BOPEN = "11";
-const DATA_TYPE_BOPENW = "12";
-const DATA_TYPE_BOPENI = "13";
+const BEFOREEND = "beforeend";
 
-const ATTR_DATA_BUTTONS = "data-button";
+const UNDO_TIMEOUT_MS = 4000;
 
-const DATA_BUTTONS_HBOOKMARKS = "0";
-const DATA_BUTTONS_HMORE = "1";
-const DATA_BUTTONS_HCLOSE = "2";
+const CSS_PADDING = 10;
 
-const DATA_BUTTONS_MUNDO = "0";
-const DATA_BUTTONS_MCLOSE = "1";
+const COMMAND_MODAL_CLOSE = "KeyQ";
+const COMMAND_MODAL_MORE = "KeyM";
+const COMMAND_MODAL_KEYBOARD = "KeyK";
+const COMMAND_EDIT = "KeyE";
+const COMMAND_FOLDER = "KeyF";
+const COMMAND_BOOKMARK = "KeyB";
+const COMMAND_BOOKMARK_EMPTY= "KeyV";
+const COMMAND_SORT = "KeyS";
+const COMMAND_OPEN = "KeyO";
+const COMMAND_OPEN_I = "KeyI"
+const COMMAND_REMOVE = "KeyR";
+const COMMAND_UNDO = "KeyU";
+const COMMAND_COPY = "KeyC";
+const COMMAND_DIRPARENT = "KeyD";
 
-const PADDING_V = 10;
+const MODAL_ACTION_CREATE = "c";
+const MODAL_ACTION_EDIT = "e";
 
-const DOM = {
-    /**
-    @type {HTMLTemplateElement | null}*/
-    templateDir: null,
-    /**
-    @type {HTMLTemplateElement | null}*/
-    templateItem: null,
-    /**
-    @type {HTMLTemplateElement | null}*/
-    templateButtons: null,
-    /**
-    @type {HTMLDivElement | null}*/
-    headerButtons: null,
-    /**
-    @type {HTMLDivElement | null} */
-    messageUndo: null,
-    /*
-    @type {HTMLElement | null}*/
-    main: null,
-    /**
-    @type {HTMLDivElement | null} */
-    modal: null,
-    /**
-    @type {HTMLSelectElement | null} */
-    modalConfigTheme: null,
-    /**
-    @type {HTMLSelectElement | null} */
-    modalConfigOpen: null,
-    /**
-    @type {HTMLInputElement | null} */
-    modalConfigFocus: null,
-    /**
-    @type {HTMLInputElement | null} */
-    modalConfigFolders: null,
-    /**
-    @type {HTMLFormElement | null} */
-    modalForm: null,
-    /**
-    @type {DocumentFragment}*/
-    fragment: document.createDocumentFragment()
-};
+const STORAGE_OPEN_NEW = "n";
+const STORAGE_OPEN_CURRENT = "c";
+const STORAGE_THEME_DARK = "d";
+const STORAGE_THEME_LIGHT = "l";
 
-const StorageState = {
-    focusTabs: false,
-    foldersBefore: true,
-    //open can be: "0" (current Tab) | "1" (new tab)
-    open: "0",
-    /**
-    @type {"dark"|"light"}*/
-    theme: "dark"
-};
-
-
-const ModalState = {
-    id: "",
-    target: null,
-    type: "",
-    depth: 0,
-    parentId: "",
-    formType: "",
-};
-
-function clearModalState() {
-    ModalState.id = "";
-    ModalState.target = null;
-    ModalState.type = "";
-    ModalState.depth = 0;
-    ModalState.parentId = "";
-    ModalState.formType = "";
-}
-
-const Changes = {
+const changes = {
     title: "",
     url: ""
 };
 
-/**
-@type {CreateDetails} */
-const CreateOptions = {
-    index: undefined,
-    parentId: undefined,
+const createDirDetails = {
+    parentId: "",
     title: "",
-    url: undefined,
+    /** @type {undefined | number}*/
+    index: undefined,
 };
 
-function clearCreateOptions() {
-    CreateOptions.index = undefined;
-    CreateOptions.parentId = undefined;
-    CreateOptions.title = "";
-    CreateOptions.url = undefined;
-}
-
-const DeleteState = {
-    /**
-    @type {BookmarkTreeNode | null} */
-    BTNode: null,
-    /**
-    @type {HTMLDivElement | null} */
-    target: null,
-    /**
-    @type {maybe<number>} */
-    timeout: undefined,
+const createItemDetails = {
+    parentId: "",
+    title: "",
+    url: "",
+    /** @type {undefined | number}*/
+    index: undefined,
 };
-function clearDeleteState() {
-    DeleteState.BTNode = null;
-    DeleteState.target = null;
-    DeleteState.timeout = undefined;
-}
 
-const SortState = {
-    /**
-    @type {HTMLDivElement | null}*/
-    target: null,
+const movedestination = {
+    index: 0,
     parentId: "",
 };
 
-const MoveOptions = {
-    index: 0,
-    parentId: ""
+const tabProperties = {
+    active: false,
+    url: ""
 };
 
-var DOMFocused = null;
-var CurrentTab = undefined;
+const windowCreateData = {
+    incognito: false,
+    /**@type {Array<string>}*/
+    url: [],
+    setSelfAsOpener: false,
+    focused: false,
+    type: "normal"
+};
 
 /**
-@type {(message: string) => never}*/
-const panic = function (message) {
-    throw Error(message);
-}
+ * @type {Array<HTMLElement>}*/
+let DOMSortContainer = [];
 
 /**
-@type {(items: StorageState) => undefined} */
-function getStorage(items) {
-    var open = items.open;
-    var focusTabs = items.focusTabs;
-    var foldersBefore = items.foldersBefore;
-    var theme = items.theme;
-    var set = false;
-    if (open === undefined) {
-        set = true;
+ * @type {chrome.tabs.Tab}*/
+let currenttab;
+
+const storage = {
+    focusTabs: false,
+    foldersBefore: false,
+    beginning: false,
+    showNumber: true,
+    /**@type {STORAGE_OPEN_NEW | STORAGE_OPEN_CURRENT}*/
+    open: STORAGE_OPEN_CURRENT,
+    /**@type {STORAGE_THEME_DARK | STORAGE_THEME_LIGHT}*/
+    theme: STORAGE_THEME_DARK
+};
+
+/**
+ * @type {(items: typeof storage) => undefined}*/
+function initStorage(items) {
+    const open = items.open;
+    const theme = items.theme;
+    const focusTabs = items.focusTabs;
+    const beginning = items.beginning;
+    const foldersBefore = items.foldersBefore;
+    const showNumber = items.showNumber;
+    let set = false;
+    if (open === STORAGE_OPEN_NEW || open === STORAGE_OPEN_CURRENT) {
+        storage.open = open;
     } else {
-        StorageState.open = open;
-        DOM.modalConfigOpen.value = open;
+        set = true;
     }
-    if (focusTabs === undefined) {
-        set = true;
+    if (showNumber !== undefined) {
+        storage.showNumber = showNumber;
     } else {
-        StorageState.focusTabs = focusTabs;
-        DOM.modalConfigFocus.checked = focusTabs;
+        set = true;
     }
-    if (foldersBefore === undefined) {
-        set = true;
+    if (theme === STORAGE_THEME_DARK || theme === STORAGE_THEME_LIGHT) {
+        storage.theme = theme;
     } else {
-        StorageState.folderBefore = foldersBefore;
-        DOM.modalConfigFolders.checked = foldersBefore;
+        set = true;
     }
-    if (theme === undefined) {
-        set = true;
+    if (focusTabs !== undefined) {
+        storage.focusTabs = focusTabs;
     } else {
-        StorageState.theme = theme;
-        document.firstElementChild?.setAttribute("class", theme);
+        set = true;
+    }
+    if (beginning !== undefined) {
+        storage.beginning = beginning;
+    } else {
+        set = true;
+    }
+    if (foldersBefore !== undefined) {
+        storage.foldersBefore = foldersBefore;
+    } else {
+        set = true;
     }
     if (set) {
-        chrome.storage.local.set(StorageState, undefined);
+        chrome.storage.local.set(storage, undefined);
     }
 }
 
-const TabOptions = {active: false, url: ""};
-/**
-@type {(url: string, ctrl: boolean) => undefined}*/
-const openLink = function (url, ctrl) {
-    TabOptions.url = url;
-    TabOptions.active = StorageState.focusTabs;
-    if ((StorageState.open === "0") === !ctrl) {
-        chrome.tabs.update(CurrentTab.id, TabOptions, undefined);
-    } else {
-        chrome.tabs.create(TabOptions, undefined);
-    }
+const DOMTemplateButtons = document.getElementById("template_buttons");
+if (DOMTemplateButtons === null) {
+    throw Error("#template_buttons does not exist");
 }
 
-const url = new URL("http://t.i");
 /**
-@type {(src: string) => string} */
-const getFavicon = function (src) {
-    url.href = chrome.runtime.getURL("/_favicon/");
-    url.searchParams.set("pageUrl", src);
-    url.searchParams.set("size", "16");
-    return url.toString();
+ * @type {null | HTMLElement}*/
+let relatedFocusTarget = null;
+
+/**
+ * @type {(empty: boolean) => undefined} */
+function focusRelatedTarget() {
+    relatedFocusTarget?.focus();
+    relatedFocusTarget = null;
 }
 
-
 /**
-@type {(
-    arr: Array<BookmarkTreeNode>,
-    fst: number,
-    lst: number,
-    p: number
-) => number}*/
-function partition(arr, fst, lst, p) {
-    var temp = arr[p];
-    arr[p] = arr[lst];
-    arr[lst] = temp;
+ * @type {(a: Array<HTMLElement>, fst: number, lst: number, p: number) => number} */
+function quicksortPartition(a, fst, lst, p) {
+    var temp = a[p];
+    a[p] = a[lst];
+    a[lst] = temp;
     let l = 0;
     for (let i = fst; i < lst; i += 1) {
-        if (arr[i].title.localeCompare(arr[lst].title) < 0) {
-            //swap
-            temp = arr[l + fst];
-            arr[l+ fst] = arr[i];
-            arr[i] = temp;
+        let c = String.prototype.localeCompare.call(
+            a[i].btnTitle,
+            a[lst].btnTitle
+        );
+        if (c < 0) {
+            temp = a[l + fst];
+            a[l + fst] = a[i];
+            a[i] = temp;
             l += 1;
         }
     }
-    temp = arr[l + fst];
-    arr[l + fst] = arr[lst];
-    arr[lst] = temp;
+    temp = a[l + fst];
+    a[l + fst] = a[lst];
+    a[lst] = temp;
     return l + fst;
 }
 
 /**
-@type {(
-    a: Array<BookmarkTreeNode>,
-    fst: number,
-    lst: number
-) => Array<BookmarkTreeNode>} */
-function quickSort(a, fst, lst) {
+ * @type {(a: Array<HTMLElement>, fst: number, lst: number) => Array<HTMLElement>} */
+function quicksort(a, fst, lst) {
     if (lst - fst < 1) {
         return a;
     }
-    let q = [fst, lst]; /*queue*/
+    let q = [fst, lst];
     let ri = 0;
     let p = 0;
     while (q.length > 0) {
         fst = q.shift();
         lst = q.shift();
         ri = Math.floor(Math.random() * (lst - fst) + fst);
-        p = partition(a, fst, lst, ri);
+        p = quicksortPartition(a, fst, lst, ri);
         if (p - 1 - fst > 0) {
             q.push(fst, p - 1);
         }
@@ -278,1085 +201,1561 @@ function quickSort(a, fst, lst) {
 }
 
 /**
-@type {(BTChildren: Array<BookmarkTreeNode>) => Array<BookmarkTreeNode>} */
-function sort(BTChildren) {
-    let dirTail = 0;
-    if (StorageState.foldersBefore) {
-        for (let i = 0; i < BTChildren.length; i += 1) {
-            let BTNode = BTChildren[i];
-            if (BTNode.url === undefined) {
-                if (i !== dirTail) {
-                    let temp = BTChildren[dirTail];
-                    BTChildren[dirTail] = BTNode;
-                    BTChildren[i] = temp;
+ * @type{(
+ *  tabProp: typeof tabProperties,
+ *  open: STORAGE_OPEN_NEW | STORAGE_OPEN_CURRENT,
+ *  ctrl: boolean
+ * ) => undefined}*/
+function openLink(tabProp, open, ctrl) {
+    if ((open === STORAGE_OPEN_NEW) === ctrl) {
+        chrome.tabs.update(undefined, tabProp, undefined);
+    } else {
+        chrome.tabs.create(tabProp, undefined);
+    }
+}
+
+/**
+ * @type {(target: HTMLElement | undefined) => undefined}*/
+function closeModal(target) {
+    Main.MAIN.inert = false;
+    HeaderNav.NAV.inert = false;
+    target?.removeAttribute("data-open");
+    focusRelatedTarget();
+}
+
+/**
+ * @throws {TypeError} A DOM element is null
+ * @type {(e: MouseEvent) => undefined}*/
+function ModalOnclick(e) {
+    const target = e.target;
+    const action = target.getAttribute("data-action");
+    if (action === "close") {
+        closeModal(e.currentTarget);
+    }
+}
+
+/**
+ * @type{(src: string) => string}*/
+function getFavicon(src) {
+    let url = chrome.runtime.getURL("/_favicon/");
+    url += "?pageUrl="+src+"&size=16";
+    return url;
+}
+
+const DirElement = {
+    TYPE: "dir",
+    /** @type {DocumentFragment} */
+    template: (function () {
+        /** @type{HTMLTemplateElement | null} */
+        let template = document.getElementById("template_dir");
+        if (template === null) {
+            throw Error("#template_dir does not exist");
+        }
+        return template.content;
+    }()),
+    /**
+     * @throws{TypeError} A DOM element is null
+     * @type{(
+          btnode: chrome.bookmarks.BookmarkTreeNode,
+          depth: number
+      ) => HTMLElement | never}*/
+    create(btnode, depth) {
+        let nchilds = btnode?.children?.length ?? 0;
+        const DOMDetails = DirElement.template.firstElementChild?.cloneNode(true);
+        DOMDetails.depth = depth;
+        DOMDetails.noopen = false;
+        DOMDetails.noremove = false;
+        DOMDetails.noedit = false;
+        DOMDetails.btnTitle = btnode.title;
+        DOMDetails.btnId = btnode.id;
+        DOMDetails.btnIndex = btnode.index;
+        DOMDetails.btnChildren = nchilds;
+        DOMDetails.btnType = DirElement.TYPE;
+
+        DOMDetails.changeTitle = DirElement.prototype.changeTitle;
+        DOMDetails.changeNumber = DirElement.prototype.changeNumber;
+
+        const DOMSummary = DOMDetails.firstElementChild;
+        DOMSummary.btnType = DirElement.TYPE;
+        DOMSummary.setAttribute("title", `${btnode.title} - ${nchilds}`);
+        DOMSummary.style.setProperty(
+            "padding-left",
+            `${depth * CSS_PADDING}px`
+        );
+
+        const DOMContent = DOMSummary.children["content"];
+        DOMContent.btnType = DirElement.TYPE;
+        DOMContent.children["number"].insertAdjacentText(BEFOREEND, String(nchilds));
+        DOMContent.children["title"].insertAdjacentText(BEFOREEND, btnode.title);
+
+        const templateButtons = DOMTemplateButtons.content.cloneNode(true);
+        let DOMButtonBookmark = templateButtons.children["bookmark"];
+        let DOMButtonFolder = templateButtons.children["folder"];
+        let DOMButtonEdit = templateButtons.children["edit"];
+        let DOMButtonMore = templateButtons.children["more"];
+        let DOMButtonSort = templateButtons.children["sort"];
+        let DOMButtonRemove = templateButtons.children["remove"];
+        let DOMButtonOpenAll = templateButtons.children["openall"];
+        let DOMButtonOpenAllW = templateButtons.children["openall_window"];
+        let DOMButtonOpenAllI = templateButtons.children["openall_incognito"];
+
+        DOMButtonEdit.setAttribute("title", "rename");
+        DOMButtonSort.insertAdjacentText(BEFOREEND, "sort by name");
+        DOMButtonRemove.insertAdjacentText(BEFOREEND, "remove folder");
+
+        let DOMButtons = DOMSummary.children["buttons"];
+        DOMButtons.btnType = DirElement.TYPE;
+
+        let DOMMore = DOMSummary.children["buttons_more"];
+        DOMMore.btnType = DirElement.TYPE;
+
+        DOMButtons.append(
+            DOMButtonBookmark,
+            DOMButtonFolder,
+            DOMButtonEdit,
+            DOMButtonMore
+        );
+        DOMMore.append(
+            DOMButtonOpenAll,
+            DOMButtonOpenAllW,
+            DOMButtonOpenAllI,
+            DOMButtonSort,
+            DOMButtonRemove
+        );
+
+        return DOMDetails;
+    },
+    /**
+     * @throws{TypeError} A DOM element is null
+     * @type{(btnode: chrome.bookmarks.BookmarkTreeNode) => HTMLElement | never}*/
+    createRoot(btnode) {
+        let nchilds = btnode?.children?.length;
+        const DOMDetails = DirElement.template.firstElementChild?.cloneNode(true);
+        DOMDetails.depth = 1;
+        DOMDetails.noopen = true;
+        DOMDetails.noremove = true;
+        DOMDetails.noedit = true;
+        DOMDetails.btnId = btnode.id;
+        DOMDetails.btnTitle = btnode.title;
+        DOMDetails.btnIndex = btnode.index;
+        DOMDetails.btnChildren = nchilds;
+        DOMDetails.btnType = DirElement.TYPE;
+
+
+        DOMDetails.changeTitle = null;
+        DOMDetails.changeNumber = DirElement.prototype.changeNumber;
+
+        const DOMSummary = DOMDetails.firstElementChild;
+        DOMSummary.btnType = DirElement.TYPE;
+        DOMSummary.setAttribute("title", `${btnode.title} - ${nchilds}`);
+        DOMSummary.style.setProperty(
+            "padding-left",
+            `${CSS_PADDING}px`
+        );
+
+        const DOMContent = DOMSummary.children["content"];
+        DOMContent.btnType = DirElement.TYPE;
+        DOMContent.children["number"].insertAdjacentText(BEFOREEND, String(nchilds));
+        DOMContent.children["title"].insertAdjacentText(BEFOREEND, btnode.title);
+
+        const templateButtons = DOMTemplateButtons.content.cloneNode(true);
+        let DOMButtonBookmark = templateButtons.children["bookmark"];
+        let DOMButtonFolder = templateButtons.children["folder"];
+        let DOMButtonSort = templateButtons.children["sort"];
+
+        let DOMButtons = DOMSummary.children["buttons"];
+        DOMButtons.btnType = DirElement.TYPE;
+
+        DOMButtons.append(
+            DOMButtonBookmark,
+            DOMButtonFolder,
+            DOMButtonSort,
+        );
+
+        return DOMDetails;
+    },
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(btnode: chrome.bookmarks.BookmarkTreeNode) => undefined} */
+    edit(btnode) {
+        const DOMDir = DirModal.target;
+        DirModal.target = undefined;
+        DOMDir.changeTitle(btnode.title);
+        closeModal(DirModal.MODAL);
+    },
+    /**
+     * @throw {TypeError} A DOM element is null
+     * @type {(btnode: chrome.bookmarks.BookmarkTreeNode) => undefined} */
+    pushDir(btnode) {
+        if (DirModal.target === undefined) {
+            console.error("ERROR: DirModal.target is undefined");
+            return;
+        }
+        let DOMParent = DirModal.target;
+        DirModal.target = undefined;
+
+        let DOMDir = DirElement.create(btnode, DOMParent.depth + 1);
+        DOMParent.changeNumber(DOMParent.btnChildren + 1);
+
+        if (storage.beginning || storage.foldersBefore) {
+            createDirDetails.index = undefined;
+            let i = btnode.index + 1;
+            while (i < DOMParent.childElementCount) {
+                let child = DOMParent.children[i];
+                child.btnIndex += 1;
+                i += 1;
+            }
+            const DOMBefore = DOMParent.children[btnode.index];
+            DOMParent.insertBefore(DOMDir, DOMBefore.nextElementSibling);
+        } else {
+            DOMParent.appendChild(DOMDir);
+        }
+
+        closeModal(DirModal.MODAL);
+    },
+    /**
+     * @throw {TypeError} A DOM element is null
+     * @type {(btnode: chrome.bookmarks.BookmarkTreeNode) => undefined} */
+    pushItem(btnode) {
+        if (ItemModal.target === undefined) {
+            console.error("ERROR: ItemModal.target is undefined");
+            return;
+        }
+
+        let DOMParent = ItemModal.target;
+        ItemModal.target = undefined;
+
+        let DOMItem = ItemElement.create(btnode, DOMParent.depth + 1);
+        DOMParent.changeNumber(DOMParent.btnChildren + 1);
+
+        if (storage.beginning || storage.foldersBefore) {
+            createItemDetails.index = undefined;
+            let i = btnode.index + 1;
+            while (i < DOMParent.childElementCount) {
+                let child = DOMParent.children[i];
+                child.btnIndex += 1;
+                i += 1;
+            }
+            const DOMBefore = DOMParent.children[btnode.index];
+            DOMParent.insertBefore(DOMItem, DOMBefore.nextElementSibling);
+        } else {
+            DOMParent.appendChild(DOMItem);
+        }
+
+        closeModal(ItemModal.MODAL);
+    },
+    /**
+     * @throw {TypeError} A DOM element is null
+     * @type {(DOMDir: HTMLDetailsElement) => undefined} */
+    openItems(DOMDir) {
+        for (let child of DOMDir.children) {
+            if (child.btnType !== ItemElement.TYPE) {
+                continue;
+            }
+            tabProperties.url = child.btnUrl;
+            chrome.tabs.create(tabProperties);
+        }
+    },
+    /**
+     * @throw {TypeError} A DOM element is null
+     * @type {(DOMDir: HTMLDetailsElement, incognito: boolean) => undefined} */
+    openItemsOnWindow(DOMDir, incognito) {
+        windowCreateData.url.length = 0;
+        windowCreateData.incognito = incognito;
+        for (let child of DOMDir.children) {
+            if (child.btnType !== ItemElement.TYPE) {
+                continue;
+            }
+            windowCreateData.url.push(child.btnUrl);
+        }
+        chrome.windows.create(windowCreateData);
+    },
+    /**
+     * @throw {TypeError} A DOM element is null
+     * @type {(DOMDir: HTMLDetailsElement) => undefined} */
+    sort(DOMDir) {
+        if (DOMDir.children.length < 2) {
+            return;
+        }
+        let children = DOMDir.children;
+        DOMSortContainer.length = children.length;
+        DOMSortContainer[0] = DOMDir.children[0];
+        if (storage.foldersBefore) {
+            let dirTail = 1;
+            let i = 1;
+            while (i < children.length) {
+                let child = children[i];
+                if (child.btnType === DirElement.TYPE) {
+                    if (dirTail !== i) {
+                        let temp = DOMSortContainer[dirTail];
+                        DOMSortContainer[dirTail] = child;
+                        DOMSortContainer[i] = temp;
+                    } else {
+                        DOMSortContainer[i] = child;
+                    }
+                    dirTail += 1
+                } else {
+                    DOMSortContainer[i] = child;
                 }
-                dirTail += 1;
+                i += 1;
+            }
+            quicksort(DOMSortContainer, 1, dirTail - 1);
+            quicksort(DOMSortContainer, dirTail, i - 1);
+        } else {
+            for (let i = 1; i < children.length; i += 1) {
+                DOMSortContainer[i] = children[i];
+            }
+            quicksort(DOMSortContainer, 1, DOMSortContainer.length - 1);
+        }
+        let parentId = DOMDir.btnId;
+        for (let i = 1; i < DOMSortContainer.length; i += 1) {
+            let child = DOMSortContainer[i];
+            child.btnIndex = i - 1;
+            movedestination.index = i - 1;
+            movedestination.parentId = parentId;
+            chrome.bookmarks.move(child.btnId, movedestination);
+        }
+        Element.prototype.replaceChildren.apply(DOMDir, DOMSortContainer);
+    },
+    prototype: {
+        /**
+         * @throws {TypeError} A DOM element is null
+         * @type {(This: HTMLDetailsElement, title: string) => undefined} */
+        changeTitle(title) {
+            this.btnTitle = title;
+
+            const DOMSummary = this.firstElementChild;
+            const DOMContent = DOMSummary.children["content"];
+            DOMSummary.setAttribute("title", `${title} - ${this.btnChildren}`);
+            DOMContent.children["title"].textContent = title;
+        },
+        /**
+         * @throws {TypeError} A DOM element is null
+         * @type {(This: HTMLDetailsElement, n: number) => undefined} */
+        changeNumber(n) {
+            this.btnChildren = n;
+            const DOMSummary = this.firstElementChild
+            const DOMContent = DOMSummary.children["content"];
+            DOMSummary.setAttribute("title", `${this.btnTitle} - ${n}`);
+            DOMContent.children["number"].textContent = n;
+        }
+    },
+};
+
+const ItemElement = {
+    TYPE: "item",
+    /** @type {DocumentFragment} */
+    template: (function () {
+        /** @type{HTMLTemplateElement | null} */
+        let template = document.getElementById("template_item");
+        if (template === null) {
+            throw Error("#template_item does not exist");
+        }
+        return template.content;
+    }()),
+    /**
+     * @throws{TypeError} A DOM element is null
+     * @type{(
+        btnode: chrome.bookmarks.BookmarkTreeNode,
+        depth: number
+    ) => HTMLElement | undefined}*/
+    create(btnode, depth) {
+        if (btnode.url === undefined) {
+            console.error("ERROR: try create a DOMItem with a dir BookmarkTreeNode");
+            return;
+        }
+        const DOMItem = ItemElement.template.firstElementChild.cloneNode(true);
+        DOMItem.depth = depth;
+        DOMItem.btnId = btnode.id;
+        DOMItem.btnTitle = btnode.title;
+        DOMItem.btnUrl = btnode.url;
+        DOMItem.btnIndex = btnode.index;
+        DOMItem.btnType = ItemElement.TYPE;
+
+        DOMItem.edit = ItemElement.prototype.edit;
+
+        const DOMContent = DOMItem.children["content"];
+        DOMContent.btnType = ItemElement.TYPE;
+
+        DOMContent.setAttribute("href", btnode.url);
+        DOMContent.setAttribute("title", `${btnode.title}\n${btnode.url}`);
+        DOMContent.style.setProperty(
+            "padding-left",
+            `${depth * CSS_PADDING}px`
+        );
+
+        const DOMContentspan = DOMContent.firstElementChild;
+        DOMContentspan.children["img"].setAttribute("src", getFavicon(btnode.url));
+        DOMContentspan.children["title"].textContent = btnode.title;
+
+        const templateButtons = DOMTemplateButtons.content.children;
+        const DOMButtonEdit = templateButtons["edit"].cloneNode(true);
+        const DOMButtonRemove = templateButtons["remove"].cloneNode(true);
+
+        DOMButtonEdit.setAttribute("title", "edit");
+
+        DOMItem.children["buttons"].btnType = ItemElement.TYPE;
+        DOMItem.children["buttons"].append(DOMButtonEdit, DOMButtonRemove);
+
+        return DOMItem;
+    },
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(btnode: chrome.bookmarks.BookmarkTreeNode) => undefined} */
+    edit(btnode) {
+        const DOMItem = ItemModal.target;
+        DOMItem.edit(btnode.title, btnode.url);
+        closeModal(ItemModal.MODAL);
+    },
+    prototype: {
+        /**
+         * @type {(
+                This: HTMLDivElement,
+                title: string,
+                url: string
+            ) => undefined} */
+        edit(title, url) {
+            this.btnTitle = title;
+            this.btnUrl = url;
+
+            const DOMContent = this.children["content"];
+            DOMContent.setAttribute("href", url);
+            DOMContent.setAttribute("title", `${title}\n${url}`);
+            DOMContent.firstElementChild.children["title"].textContent = title;
+        }
+    },
+};
+
+const DirModal = {
+    action: MODAL_ACTION_EDIT,
+    id: "",
+    parentId: "",
+    prevTitle: "",
+
+    /**@type{undefined | HTMLElement}*/
+    target: undefined,
+
+    /** @type {HTMLDivElement} */
+    MODAL: (function () {
+        let modal = document.getElementById("modal_dir");
+        if (modal === null) {
+            throw Error("#modal_dir does not exist");
+        }
+        return modal;
+    }()),
+    /** @type {HTMLFormElement} */
+    FORM: (function () {
+        let form = document.forms["dir"];
+        if (form === undefined) {
+            throw Error("form.dir does not exist");
+        }
+        return form;
+    }()),
+    /**
+     * @throws{TypeError} A DOM element is null
+     * @type{(DOMDir: HTMLElement) => undefined}*/
+    openCreate(DOMDir) {
+        if (DOMDir.btnId === undefined || DOMDir.depth === undefined) {
+            console.error("ERROR: id or depth property does not exist");
+            return;
+        }
+        DirModal.action = MODAL_ACTION_CREATE;
+        DirModal.parentId = DOMDir.btnId;
+        DirModal.target = DOMDir;
+        DirModal.depth = DOMDir.depth;
+
+        Main.MAIN.inert = true;
+        HeaderNav.NAV.inert = true;
+        Message.infocus = false;
+
+        DirModal.MODAL?.setAttribute("data-open", "");
+        DirModal.MODAL?.setAttribute("data-modal", "create");
+
+        DirModal.FORM.reset();
+        DirModal.FORM["title"].focus();
+    },
+    /**
+     * @throws{TypeError} A DOM element is null
+     * @type{(DOMDir: HTMLElement) => undefined}*/
+    openEdit(DOMDir) {
+        if (DOMDir.btnId == null || DOMDir.depth == null) {
+            console.error("ERROR: id or depth property does not exist");
+            return;
+        }
+        DirModal.action = MODAL_ACTION_EDIT;
+        DirModal.id = DOMDir.btnId;
+        DirModal.target = DOMDir;
+        DirModal.depth = DOMDir.depth;
+        DirModal.prevTitle = DOMDir.btnTitle;
+
+        Main.MAIN.inert = true;
+        HeaderNav.NAV.inert = true;
+        Message.infocus = false;
+
+        DirModal.MODAL?.setAttribute("data-open", "");
+        DirModal.MODAL?.setAttribute("data-modal", "edit");
+        DirModal.MODAL.title = DOMDir.btnTitle;
+
+        DirModal.FORM["title"].value = DOMDir.btnTitle;
+        DirModal.FORM["title"].focus();
+    },
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(e: SubmitEvent) => undefined} */
+    onsubmit(e) {
+        e.preventDefault();
+        let title = DirModal.FORM["title"].value;
+        if (title === undefined || title.length < 1) {
+            return;
+        }
+        if (DirModal.action === MODAL_ACTION_EDIT) {
+            if (title === DirModal.prevTitle) {
+                return;
+            }
+            changes.title = title;
+            chrome.bookmarks.update(DirModal.id, changes, DirElement.edit);
+        } else if (DirModal.action === MODAL_ACTION_CREATE) {
+            if (storage.beginning) {
+                createDirDetails.index = 0;
+            } else if (storage.foldersBefore) {
+                let target = DirModal.target;
+                let i = 1;
+                while (i < target.childElementCount
+                    && target.children[i].btnType === DirElement.TYPE
+                ) {
+                    i += 1;
+                }
+                createDirDetails.index = i-1;
+            }
+            createDirDetails.parentId = DirModal.parentId;
+            createDirDetails.title = title;
+            chrome.bookmarks.create(createDirDetails, DirElement.pushDir);
+        }
+    },
+};
+
+const ItemModal = {
+    action: MODAL_ACTION_EDIT,
+    id: "",
+    parentId: "",
+    prevTitle: "",
+    prevUrl: "",
+    /**@type{undefined | HTMLElement}*/
+    target: undefined,
+
+    /** @type {HTMLDivElement} */
+    MODAL: (function () {
+        let modal = document.getElementById("modal_item");
+        if (modal === null) {
+            throw Error("#modal_item does not exist");
+        }
+        return modal;
+    }()),
+    /** @type {HTMLFormElement} */
+    FORM: (function () {
+        let form = document.forms["items"];
+        if (form === undefined) {
+            throw Error("form.items does not exist");
+        }
+        return form;
+    }()),
+    /**
+     * @throws{TypeError} A DOM element is null
+     * @type{(DOMItem: HTMLElement, empty: boolean) => undefined}*/
+    openCreate(DOMDir, empty) {
+        if (DOMDir.btnId == null || DOMDir.depth == null) {
+            console.error("ERROR: id or depth property does not exist");
+            return;
+        }
+        ItemModal.action = MODAL_ACTION_CREATE;
+        ItemModal.parentId = DOMDir.btnId;
+        ItemModal.target = DOMDir;
+        ItemModal.id = "";
+
+        if (!empty) {
+            ItemModal.FORM["title"].value = currenttab.title;
+            ItemModal.FORM["url"].value = currenttab.url;
+        } else {
+            ItemModal.FORM.reset();
+        }
+
+        Main.MAIN.inert = true;
+        HeaderNav.NAV.inert = true;
+        Message.infocus = false;
+
+        ItemModal.MODAL?.setAttribute("data-open", "");
+        ItemModal.MODAL?.setAttribute("data-modal", "create");
+        ItemModal.FORM["title"].focus();
+    },
+    /**
+     * @throws{TypeError} A DOM element is null
+     * @type{(DOMItem: HTMLElement) => undefined}*/
+    openEdit(DOMItem) {
+        if (DOMItem.btnId == null || DOMItem.depth == null) {
+            console.error("ERROR: id or depth property does not exist");
+            return;
+        }
+        ItemModal.action = MODAL_ACTION_EDIT;
+        ItemModal.id = DOMItem.btnId;
+        ItemModal.target = DOMItem;
+        ItemModal.parentId = "";
+        ItemModal.prevTitle = DOMItem.btnTitle;
+        ItemModal.prevUrl = DOMItem.btnUrl;
+
+        Main.MAIN.inert = true;
+        HeaderNav.NAV.inert = true;
+        Message.infocus = false;
+
+        ItemModal.MODAL?.setAttribute("data-open", "");
+        ItemModal.MODAL?.setAttribute("data-ItemModal", "edit");
+
+        ItemModal.FORM["title"].value = DOMItem.btnTitle;
+        ItemModal.FORM["url"].value = DOMItem.btnUrl
+        ItemModal.FORM["title"].focus();
+    },
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(e: SubmitEvent) => undefined} */
+    onsubmit(e) {
+        e.preventDefault();
+        let title = ItemModal.FORM["title"].value;
+        let url = ItemModal.FORM["url"].value;
+        if (title === undefined || title.length < 1
+            || url === undefined || url.length < 1
+        ) {
+            return;
+        }
+        if (ItemModal.action === MODAL_ACTION_EDIT) {
+            if (title === ItemModal.prevTitle && url === ItemModal.prevUrl) {
+                return;
+            }
+            changes.title = title;
+            changes.url = url;
+            chrome.bookmarks.update(ItemModal.id, changes, ItemElement.edit);
+        } else if (ItemModal.action === MODAL_ACTION_CREATE) {
+            if (storage.beginning) {
+                if (storage.foldersBefore) {
+                    let target = ItemModal.target;
+                    let i = 1;
+                    while (i < target.childElementCount
+                        && target.children[i].btnType === DirElement.TYPE
+                    ) {
+                        i += 1;
+                    }
+                    createItemDetails.index = i-1;
+                } else {
+                    createItemDetails.index = 0;
+                }
+            }
+            createItemDetails.title = title;
+            createItemDetails.url = url;
+            createItemDetails.parentId = ItemModal.parentId;
+            chrome.bookmarks.create(createItemDetails, DirElement.pushItem);
+        }
+    },
+};
+
+const MoreModal = {
+    MODAL: (function () {
+        let modal = document.getElementById("modal_more");
+        if (modal === null) {
+            throw Error("#modal_more does not exist");
+        }
+        return modal;
+    }()),
+    /** @type {HTMLFormElement} */
+    FORM: (function () {
+        let form = document.forms["more"];
+        if (form === undefined) {
+            throw Error("form.more does not exist");
+        }
+        return form;
+    }()),
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(s: typeof storage) => undefined}*/
+    init(s) {
+        MoreModal.FORM["theme"].value = s.theme;
+        MoreModal.FORM["number"].checked = s.showNumber;
+        MoreModal.FORM["open"].value = s.open;
+        MoreModal.FORM["focus"].checked = s.focusTabs;
+        MoreModal.FORM["beginning"].checked = s.beginning;
+        MoreModal.FORM["folders"].checked = s.foldersBefore;
+    },
+    open() {
+        if (relatedFocusTarget === null) {
+            if (document.activeElement === null
+                || document.activeElement === document.body
+            ) {
+                relatedFocusTarget = HeaderNav.NAV.children["more"];
+            } else {
+                relatedFocusTarget = document.activeElement;
             }
         }
-        quickSort(BTChildren, 0, dirTail - 1);
-        quickSort(BTChildren, dirTail, BTChildren.length - 1);
-    } else {
-        quickSort(BTChildren, 0, BTChildren.length - 1)
-    }
-    return BTChildren;
-}
+        Main.MAIN.inert = true;
+        HeaderNav.NAV.inert = true;
+        Message.infocus = false;
 
-
-/**
-@type {<Node extends {title: string, id: string}>(
-    BTNode: Node,
-    depth: number,
-    DOMTemplateDir: HTMLTemplateElement,
-    DOMTemplateButtons: maybe<HTMLTemplateElement>
-) => HTMLDivElement}*/
-const createDOMDir = function (
-    BTNode,
-    depth,
-    DOMTemplateDir,
-    DOMTemplateButtons
-) {
-    var DOMDirClone = DOMTemplateDir.content.cloneNode(true);
-    var DOMDir = DOMDirClone.firstElementChild
-    DOMDir.setAttribute("data-id", BTNode.id);
-    DOMDir.setAttribute("data-depth", String(depth));
-    DOMDir.setAttribute("title", BTNode.title);
-
-    var DOMDirHeader = DOMDir.firstElementChild;
-    var DOMDirButton = DOMDirHeader.firstElementChild;
-
-    DOMDirButton.style.setProperty(
-        "padding-left",
-        `${depth * PADDING_V}px`
-    );
-
-    var DOMDirTitle = DOMDirButton.lastElementChild;
-    DOMDirTitle.textContent = BTNode.title;
-
-    if (DOMTemplateButtons !== undefined) {
-        var DOMButtons = DOMTemplateButtons.content.cloneNode(true).children;
-
-        var DOMBBookmark = DOMButtons[0];
-        var DOMBFolder = DOMButtons[1];
-        var DOMBEdit = DOMButtons[2];
-        var DOMBMore = DOMButtons[3];
-        var DOMBSort = DOMButtons[4];
-        var DOMBRemove = DOMButtons[5];
-        var DOMBOpen = DOMButtons[6];
-        var DOMBOpenw = DOMButtons[7];
-        var DOMBOpeni = DOMButtons[8];
-
-        var DOMRight = DOMDirHeader.children[1];
-        var DOMMore = DOMDirHeader.children[2];
-
-        DOMRight.appendChild(DOMBBookmark);
-        DOMRight.appendChild(DOMBFolder);
-        DOMRight.appendChild(DOMBEdit);
-        DOMRight.appendChild(DOMBMore);
-
-        DOMBSort.insertAdjacentText("beforeend", "Sort A-Z");
-        DOMBRemove.insertAdjacentText("beforeend", "Remove folder");
-        DOMMore.appendChild(DOMBOpen);
-        DOMMore.appendChild(DOMBOpenw);
-        DOMMore.appendChild(DOMBOpeni);
-        DOMMore.appendChild(DOMBSort);
-        DOMMore.appendChild(DOMBRemove);
-    }
-    return DOMDir;
-}
-
-/**
-@type {(DOMDir: HTMLDivElement, title: string) => undefined} */
-function updateDOMDir(DOMDir, title) {
-    const DOMDirTitle = (
-        DOMDir.firstElementChild.firstElementChild.lastElementChild
-    );
-    DOMDirTitle.textContent = title;
-}
-
-
-/**
-@type {<Node extends {title: string, id: string}>(
-    BTNode: Node,
-    depth: number,
-    DOMTemplateItem: HTMLTemplateElement,
-    DOMTemplateButtons: maybe<HTMLTemplateElement>
-) => HTMLAnchorElement | never}*/
-function createDOMItem(BTNode, depth, DOMTemplateItem, DOMTemplateButtons) {
-    if (BTNode.url === undefined) {
-        panic("BookmarkTreeNode.url is undefined");
-    }
-
-    var DOMItemClone = DOMTemplateItem.content.cloneNode(true);
-    var DOMItem = DOMItemClone.firstElementChild;
-    DOMItem.setAttribute("data-id", BTNode.id);
-    DOMItem.setAttribute("data-depth", String(depth));
-    DOMItem.setAttribute("title", `${BTNode.title}\n${BTNode.url}`);
-
-    var DOMItemContent = DOMItem.firstElementChild;
-    DOMItemContent.setAttribute("href", BTNode.url);
-    DOMItemContent.style.setProperty(
-        "padding-left",
-        `${depth * PADDING_V}px`
-    );
-    var DOMItemImg = DOMItemContent.children[0];
-
-
-    DOMItemImg.setAttribute("src", getFavicon(BTNode.url));
-
-    var DOMItemTitle = DOMItemContent.children[1];
-    DOMItemTitle.textContent = BTNode.title;
-
-    if (DOMTemplateButtons !== undefined) {
-        var DOMRight = DOMItem.lastElementChild;
-        var DOMButtons = DOMTemplateButtons.content.children;
-        var DOMBEdit = DOMButtons[2].cloneNode(true);
-        var DOMBRemove = DOMButtons[5].cloneNode(true);
-        DOMBRemove.classList.add("c_center-children");
-        DOMRight.appendChild(DOMBEdit);
-        DOMRight.appendChild(DOMBRemove);
-    }
-
-    return DOMItem;
-}
-
-/**
-@type {(DOMItem: HTMLDivElement, title: string, url: string) => undefined} */
-function updateDOMItem(DOMItem, title, url) {
-    const DOMItemA = DOMItem.firstElementChild;
-    DOMItemA.setAttribute("href", url);
-    DOMItemA.lastElementChild.textContent = title;
-}
-
-/**
-@type {(
-    root: BookmarkTreeNode,
-    depth: number, //the depth of the root
-    DOMRoot: HTMLElement,
-    DOMTemplateDir: HTMLTemplateElement,
-    DOMTemplateItem: HTMLTemplateElement,
-    DOMTemplateButtons: HTMLTemplateElement
-) => HTMLElement | never}*/
-function BTNToDOM(
-    root,
-    depth,
-    DOMRoot,
-    DOMTemplateDir,
-    DOMTemplateItem,
-    DOMTemplateButtons
-) {
-    var DOMStack = [DOMRoot]
-    var stack = [root];
-    var idx = -1;
-    /** @type {BookmarkTreeNode} */
-    var u;
-    /** @type {HTMLElement} */
-    var DOMElement;
-
-    while (stack.length > 0) {
-        u = stack[stack.length - 1];
-        if (u.children === undefined || idx + 1 === u.children.length) {
-            stack.pop();
-            if (u.index === undefined) {
-                panic("BookmarkTreeNode.index is undefined");
+        MoreModal.MODAL?.setAttribute("data-open", "");
+        MoreModal.FORM["theme"].focus();
+    },
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(e: InputEvent) => undefined}*/
+    onchange(e) {
+        const target = e.target;
+        let name = target.getAttribute("name");
+        let storageChange = false;
+        if (name === "theme") {
+            if (target.value === STORAGE_THEME_DARK
+                || target.value === STORAGE_THEME_LIGHT
+            ) {
+                storage.theme = target.value;
+                document.firstElementChild?.setAttribute("class", target.value);
+                storageChange = true;
+            } else {
+                target.value = STORAGE_THEME_DARK;
+                document.firstElementChild.setAttribute("class", STORAGE_THEME_DARK);
+                if (storage.theme !== STORAGE_THEME_DARK) {
+                    storage.theme = STORAGE_THEME_DARK;
+                    storageChange = true;
+                }
+                console.error("WARNNING: the theme value was wrong, it will set the default");
             }
-            idx = u.index;
+        } else if (name === "number") {
+            storage.showNumber = target.checked;
+            if (target.checked) {
+                Main.MAIN?.removeAttribute("css-nonumber");
+            } else {
+                Main.MAIN?.setAttribute("css-nonumber", "");
+            }
+            storageChange = true;
+        } else if (name === "open") {
+            if (target.value === STORAGE_OPEN_NEW
+                || target.value === STORAGE_OPEN_CURRENT
+            ) {
+                storage.open = target.value;
+                storageChange = true;
+            } else {
+                target.value = STORAGE_OPEN_CURRENT;
+                if (storage.open !== STORAGE_OPEN_CURRENT) {
+                    storage.open = STORAGE_OPEN_CURRENT;
+                    storageChange = true;
+                }
+                console.error("WARNNING: the open value was wrong, it will set the default");
+            }
+        } else if (name === "focus") {
+            storage.focusTabs = target.checked;
+            tabProperties.active = storage.focusTabs;
+            windowCreateData.focused = storage.focusTabs;
+            storageChange = true;
+        } else if (name === "beginning") {
+            storage.beginning = target.checked;
+            storageChange = true;
+        } else if (name === "folders") {
+            storage.foldersBefore = target.checked;
+            storageChange = true;
+        }
+        if (storageChange) {
+            chrome.storage.local.set(storage, undefined);
+        }
+    }
+};
+
+const KeyboardModal = {
+    /** @type {HTMLDivElement} */
+    MODAL: (function () {
+        let modal = document.getElementById("modal_keyboard");
+        if (modal === null) {
+            throw Error("#modal_keyboard does not exist");
+        }
+        return modal;
+    }()),
+    open() {
+        if (relatedFocusTarget === null) {
+            if (document.activeElement === null
+                || document.activeElement === document.body
+            ) {
+                relatedFocusTarget = HeaderNav.NAV.children["keyboard"];
+            } else {
+                relatedFocusTarget = document.activeElement;
+            }
+        }
+
+        Main.MAIN.inert = true;
+        HeaderNav.NAV.inert = true;
+        Message.infocus = false;
+
+        KeyboardModal.MODAL?.setAttribute("data-open", "");
+        KeyboardModal.MODAL
+            .firstElementChild
+            .firstElementChild
+            .lastElementChild
+            .focus();
+    }
+};
+
+const Message = {
+    /** @type {HTMLDivElement} */
+    MESSAGE: (function () {
+        const DOMMessage = document.getElementById("message");
+        if (DOMMessage === null) {
+            throw Error("#message does not exist");
+        }
+        return DOMMessage
+    }()),
+    infocus: false,
+    type: "",
+    /**@type{HTMLElement | null}*/
+    target: null,
+    /**@type{HTMLElement | null}*/
+    parentTarget: null,
+    /**@type{Timer | undefined}*/
+    timeout: undefined,
+    clear() {
+        Message.target = null;
+        Message.parentTarget = null;
+        Message.timeout = undefined;
+        Message.infocus = false;
+    },
+    /**
+     * @type {(title: string) => undefined} */
+    open(title) {
+        Message.MESSAGE.setAttribute("data-show", "");
+        const DOMHeader = Message.MESSAGE.firstElementChild?.lastElementChild;
+        const DOMClose = Message.MESSAGE.lastElementChild?.lastElementChild;
+        DOMHeader.textContent = title;
+        Message.infocus = true;
+        DOMClose.focus();
+    },
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(type: string, target: HTMLElement) => undefined} */
+    remove(type, target) {
+        if (Message.timeout !== undefined) {
+            clearTimeout(Message.timeout);
+        }
+        const DOMParent = target.parentElement;
+        Message.type = type;
+        Message.target = target;
+        Message.parentTarget = DOMParent;
+        Message.timeout = setTimeout(Message.close, UNDO_TIMEOUT_MS);
+        if (target.btnId !== undefined) {
+            let i = target.btnIndex + 2;
+            while (i < DOMParent.childElementCount) {
+                DOMParent.children[i].btnIndex -= 1;
+                i += 1;
+            }
+            DOMParent?.changeNumber(DOMParent.btnChildren - 1);
+
+            DOMParent.removeChild(target);
+            chrome.bookmarks.removeTree(target.btnId, undefined);
+
+            Message.open(target.btnTitle);
+
+        } else {
+            console.error("ERROR: btnId property does not exist");
+        }
+    },
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(DOMDir: HTMLElement, parentId: string) => Promise<undefined>} */
+    async undoBtnDir(DOMDir, parentId) {
+        const stack  = [DOMDir];
+        let i = 1;
+        let visited = false;
+        createDirDetails.index = DOMDir.btnIndex;
+        while (stack.length > 0) {
+            let node = stack[stack.length - 1];
+            if (!visited) {
+                createDirDetails.title = node.btnTitle;
+                createDirDetails.parentId = parentId;
+
+                let btnode = await chrome.bookmarks.create(createDirDetails);
+                node.btnId = btnode.id;
+                createDirDetails.index = undefined;
+                i = 1;
+            }
+
+            let childrenLen = node.children.length;
+            if (1 < childrenLen) {
+                parentId = node.btnId;
+                let child = node.children[i];
+                while (i < childrenLen && child.btnType === ItemElement.TYPE)  {
+                    child = node.children[i];
+                    createItemDetails.title = child.btnTitle;
+                    createItemDetails.url = child.btnUrl;
+                    createItemDetails.parentId = parentId;
+
+                    let btnode = await chrome.bookmarks.create(createItemDetails);
+                    child.btnId = btnode.id;
+
+                    i += 1;
+                }
+            }
+            if (1 < childrenLen && i < childrenLen) {
+                stack.push(node.children[i]);
+                visited = false;
+            } else {
+                stack.pop();
+                i = node.btnIndex + 2;
+                visited = true;
+            }
+        }
+    },
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(DOMDir: HTMLElement, parentId: string) => Promise<undefined>} */
+    async undoBtnItem(DOMItem, parentId) {
+        createItemDetails.title = DOMItem.btnTitle;
+        createItemDetails.url = DOMItem.btnUrl;
+        createItemDetails.parentId = parentId
+        createItemDetails.index = DOMItem.btnIndex;
+
+        let btnode = await chrome.bookmarks.create(createItemDetails);
+        DOMItem.btnId = btnode.id;
+        createItemDetails.index = undefined;
+    },
+    undo() {
+        const target = Message.target;
+        const DOMParent = Message.parentTarget;
+        if (target === null || DOMParent === null) {
+            return;
+        }
+        if (Message.timeout !== undefined) {
+            clearTimeout(Message.timeout);
+        }
+        if (Message.type === DirElement.TYPE) {
+            Message.undoBtnDir(target, DOMParent.btnId);
+        } else {
+            Message.undoBtnItem(target, DOMParent.btnId);
+        }
+        let i = target.btnIndex + 1;
+        while (i < DOMParent.childElementCount) {
+            DOMParent.children[i].btnIndex += 1;
+            i += 1;
+        }
+        const DOMPrevSibling = DOMParent.children[target.btnIndex];
+        DOMParent.changeNumber(DOMParent.btnChildren + 1);
+        DOMParent.insertBefore(target, DOMPrevSibling.nextSibling);
+
+        if (Message.infocus) {
+            relatedFocusTarget = target.firstElementChild
+        }
+
+        Message.close();
+    },
+    close() {
+        Message.MESSAGE.removeAttribute("data-show");
+        if (Message.infocus) {
+            focusRelatedTarget();
+        }
+        Message.clear();
+    },
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(e: MouseEvent) => undefined | never} */
+    onclick(e) {
+        let target = e.target;
+        let name = target.getAttribute("name");
+        if (name === "close") {
+            Message.close();
+        } else if (name === "undo") {
+            Message.undo();
+        }
+    },
+    /**
+     * @type {(e: KeyboardEvent) => undefined | never} */
+    onkeydown(e) {
+        if (e.code === "Tab") {
+            if ((e.shiftKey && e.target.getAttribute("name") === "undo")
+                || e.target.getAttribute("name") === "close"
+            ) {
+                Message.infocus = false;
+                focusRelatedTarget();
+            }
+        } else if (e.code === COMMAND_MODAL_CLOSE) {
+            Message.close();
+        }
+    }
+};
+
+const HeaderNav = {
+    /** @type {HTMLDivElement} */
+    NAV: (function () {
+        const DOMHeaderNav = document.getElementById("header_nav");
+        if (DOMHeaderNav === null) {
+            throw Error("#header_nav does not exist");
+        }
+        return DOMHeaderNav;
+    }()),
+    /**
+     * @throws{TypeError} A DOM element is null
+     * @type {(e: MouseEvent) => undefined}*/
+    onclick(e) {
+        let target = e.target;
+        let name = target.getAttribute("name");
+        if (name === "bookmarks") {
+            tabProperties.url = "about://bookmarks";
+            openLink(tabProperties, storage.open, e.ctrlKey);
+        } else if (name === "more") {
+            MoreModal.open();
+        } else if (name === "keyboard") {
+            KeyboardModal.open();
+        } else if (name === "close") {
+            window.close();
+        }
+    },
+    /**
+     * @type {(e: MouseEvent) => undefined}*/
+    onauxclick(e) {
+        let target = e.target;
+        let name = target?.getAttribute("name");
+        if (name === "bookmarks") {
+            tabProperties.url = "about://bookmarks";
+            chrome.tabs.create(tabProperties, undefined);
+        }
+    }
+};
+
+const Main = {
+    /** @type {HTMLDivElement} */
+    MAIN: (function () {
+        const main = document.getElementById("main");
+        if (main === null) {
+            throw Error("#main does not exist");
+        }
+        return main;
+    }()),
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(e: MouseEvent) => undefined}*/
+    onauxclick(e) {
+        const target = e.target;
+        const name = target?.getAttribute("name");
+        if (name !== "content" && target.btnType !== ItemElement.TYPE) {
+            return;
+        }
+        e.preventDefault();
+        const href = target?.getAttribute("href");
+        tabProperties.url = href;
+        chrome.tabs.create(tabProperties, undefined);
+    },
+    /**
+     * @throws{TypeError} A DOM element is null
+     * @type {(e: MouseEvent) => undefined}*/
+    onclick(e) {
+        const target = e.target;
+        const name = target?.getAttribute("name");
+        if (name === "content") {
+            if (target.btnType === ItemElement.TYPE) {
+                if (!e.shiftKey) {
+                    e.preventDefault();
+                    const href = target?.getAttribute("href");
+                    tabProperties.url = href;
+                    openLink(tabProperties, storage.open, e.ctrlKey);
+                }
+            } else if (target.btnType === DirElement.TYPE) {
+                const DOMSummary = target.parentElement;
+                const DOMDir = target.parentElement.parentElement;
+                if (DOMDir.hasAttribute("open")) {
+                    let y = (DOMDir.offsetTop
+                        - Main.MAIN.offsetTop
+                        - DOMSummary.clientHeight
+                    );
+                    if (Main.MAIN.scrollTop > y) {
+                        Main.MAIN.scroll(0, y);
+                    }
+                }
+            }
+        } else if (name === "bookmark") {
+            const DOMDir = (
+                target
+                ?.parentElement
+                ?.parentElement
+                ?.parentElement
+            );
+            relatedFocusTarget = DOMDir.firstElementChild;
+            ItemModal.openCreate(DOMDir, e.shiftKey);
+
+        } else if (name === "folder") {
+            const DOMDir = (
+                target
+                ?.parentElement
+                ?.parentElement
+                ?.parentElement
+            );
+            relatedFocusTarget = DOMDir.firstElementChild;
+            DirModal.openCreate(DOMDir);
+
+        } else if (name === "edit") {
+            let btnType = target.parentElement.btnType;
+            if (btnType === DirElement.TYPE) {
+                const DOMDir = (
+                    target
+                    ?.parentElement
+                    ?.parentElement
+                    ?.parentElement
+                );
+                if (DOMDir.noedit) {
+                    return;
+                }
+                relatedFocusTarget = DOMDir.firstElementChild;
+                DirModal.openEdit(DOMDir);
+
+            } else if (btnType === ItemElement.TYPE) {
+                const DOMItem = target?.parentElement?.parentElement;
+                relatedFocusTarget = target?.parentElement;
+                ItemModal.openEdit(DOMItem);
+            }
+        } else if (name === "remove") {
+            let btnType = target.parentElement.btnType;
+            if (btnType === DirElement.TYPE) {
+                const DOMDir = (
+                    target
+                    ?.parentElement
+                    ?.parentElement
+                    ?.parentElement
+                );
+                if (DOMDir.noremove) {
+                    return;
+                }
+                if (DOMDir.nextElementSibling === null) {
+                    const DOMParent = DOMDir?.parentElement;
+                    relatedFocusTarget = DOMParent?.nextElementSibling?.firstElementChild;
+                } else {
+                    relatedFocusTarget = DOMDir.nextElementSibling.firstElementChild;
+                }
+                Message.remove(btnType, DOMDir);
+
+            } else if (btnType === ItemElement.TYPE) {
+                const DOMItem = target?.parentElement?.parentElement;
+                if (DOMItem.nextElementSibling === null) {
+                    const DOMParent = DOMItem.parentElement;
+                    relatedFocusTarget = DOMParent.nextElementSibling?.firstElementChild;
+                } else {
+                    relatedFocusTarget = DOMItem.nextElementSibling.firstElementChild;
+                }
+                Message.remove(btnType, DOMItem);
+            }
+        } else if (name === "sort") {
+            const DOMDir = (
+                target
+                ?.parentElement
+                ?.parentElement
+                ?.parentElement
+            );
+            DirElement.sort(DOMDir);
+        } else if (name === "openall") {
+            const DOMDir = (
+                target
+                ?.parentElement
+                ?.parentElement
+                ?.parentElement
+            );
+            if (DOMDir.noopen) {
+                return;
+            }
+            DirElement.openItems(DOMDir);
+
+        } else if (name === "openall_window") {
+            const DOMDir = (
+                target
+                ?.parentElement
+                ?.parentElement
+                ?.parentElement
+            );
+            if (DOMDir.noopen) {
+                return;
+            }
+            DirElement.openItemsOnWindow(DOMDir, false);
+
+        } else if (name === "openall_incognito") {
+            const DOMDir = (
+                target
+                ?.parentElement
+                ?.parentElement
+                ?.parentElement
+            );
+            if (DOMDir.noopen) {
+                return;
+            }
+            DirElement.openItemsOnWindow(DOMDir, true);
+        }
+    },
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(e: KeyboardEvent) => undefined | never} */
+    onkeyup(e) {
+        let target = e.target;
+        let btnType = target?.btnType
+        if (btnType === undefined) {
+            return;
+        }
+        if (e.code === COMMAND_BOOKMARK || e.code === COMMAND_BOOKMARK_EMPTY) {
+            if (e.ctrlKey) {
+                return
+            }
+            let DOMDir;
+            if (e.shiftKey) {
+                if (btnType === DirElement.TYPE) {
+                    DOMDir = target.parentElement.parentElement;
+                } else if (btnType === ItemElement.TYPE)  {
+                    DOMDir = target.parentElement.parentElement.parentElement;
+                }
+            } else {
+                if (btnType === DirElement.TYPE) {
+                    DOMDir = target.parentElement;
+                } else if (btnType === ItemElement.TYPE)  {
+                    DOMDir = target.parentElement.parentElement;
+                }
+            }
+            if (DOMDir !== undefined && DOMDir.btnType === DirElement.TYPE) {
+                relatedFocusTarget = target;
+                ItemModal.openCreate(DOMDir, e.code === COMMAND_BOOKMARK_EMPTY);
+            }
+        } else if (e.code === "Space") {
+            if (btnType === DirElement.TYPE) {
+                const DOMSummary = target;
+                const DOMDir = target.parentElement;
+                if (DOMDir.hasAttribute("open")) {
+                    let y = (DOMDir.offsetTop
+                        - Main.MAIN.offsetTop
+                        - DOMSummary.clientHeight
+                    );
+                    if (Main.MAIN.scrollTop > y) {
+                        Main.MAIN.scroll(0, y);
+                    }
+                }
+            }
+        } else if (e.code === COMMAND_FOLDER) {
+            if (e.ctrlKey) {
+                return
+            }
+            let DOMDir;
+            if (e.shiftKey) {
+                if (btnType === DirElement.TYPE) {
+                    DOMDir = target.parentElement.parentElement;
+                } else if (btnType === ItemElement.TYPE)  {
+                    DOMDir = target.parentElement.parentElement.parentElement;
+                }
+            } else {
+                if (btnType === DirElement.TYPE) {
+                    DOMDir = target.parentElement;
+                } else if (btnType === ItemElement.TYPE)  {
+                    DOMDir = target.parentElement.parentElement;
+                }
+            }
+            if (DOMDir !== undefined && DOMDir.btnType === DirElement.TYPE) {
+                relatedFocusTarget = target;
+                DirModal.openCreate(DOMDir);
+            }
+        } else if (e.code === COMMAND_EDIT) {
+            if (e.ctrlKey || e.shiftKey) {
+                return
+            }
+            if (btnType === DirElement.TYPE) {
+                const DOMDir = target.parentElement;
+                if (DOMDir.noedit) {
+                }
+
+                DirModal.openEdit(DOMDir);
+
+            } else if (btnType === ItemElement.TYPE)  {
+                const DOMItem = target?.parentElement;
+                relatedFocusTarget = target;
+                ItemModal.openEdit(DOMItem);
+            }
+        } else if (e.code === COMMAND_REMOVE) {
+            if (e.ctrlKey || e.shiftKey) {
+                return
+            }
+            let DOMDir;
+            if (btnType === DirElement.TYPE) {
+                DOMDir = target.parentElement;
+                if (DOMDir.nextElementSibling === null) {
+                    const DOMParent = DOMDir?.parentElement;
+                    relatedFocusTarget = DOMParent?.nextElementSibling?.firstElementChild;
+                } else {
+                    relatedFocusTarget = DOMDir.nextElementSibling.firstElementChild;
+                }
+                if (DOMDir !== undefined) {
+                    if (DOMDir.noremove) {
+                        return;
+                    }
+                    Message.remove(btnType, DOMDir);
+                }
+            } else if (btnType === ItemElement.TYPE)  {
+                const DOMItem = target?.parentElement;
+                DOMDir = DOMItem?.parentElement;
+                if (DOMItem.nextElementSibling === null) {
+                    relatedFocusTarget = DOMDir?.nextElementSibling?.firstElementChild;
+                } else {
+                    relatedFocusTarget = DOMItem.nextElementSibling.firstElementChild;
+                }
+                Message.remove(btnType, DOMItem);
+            }
+        } else if (e.code === COMMAND_SORT) {
+            if (e.ctrlKey) {
+                return
+            }
+            let DOMDir;
+            if (e.shiftKey && btnType === DirElement.TYPE) {
+                DOMDir = target.parentElement.parentElement;
+            } else {
+                if (btnType === DirElement.TYPE) {
+                    DOMDir = target.parentElement;
+                } else if (btnType === ItemElement.TYPE)  {
+                    DOMDir = target.parentElement.parentElement;
+                }
+            }
+            if (DOMDir !== undefined) {
+                DirElement.sort(DOMDir);
+                target.focus();
+            }
+        } else if (e.code === COMMAND_OPEN) {
+            if (e.ctrlKey) {
+                return
+            }
+            if (btnType === DirElement.TYPE) {
+                const DOMDir = target.parentElement;
+                if (DOMDir !== undefined) {
+                    if (DOMDir.noopen) {
+                        return;
+                    }
+                    if (e.shiftKey) {
+                        DirElement.openItemsOnWindow(DOMDir, false);
+                    } else {
+                        DirElement.openItems(DOMDir);
+                    }
+                }
+            }
+        } else if (e.code === COMMAND_OPEN_I) {
+            if (!e.shiftKey) {
+                return
+            }
+            if (btnType === DirElement.TYPE) {
+                const DOMDir = target.parentElement;
+                if (DOMDir !== undefined) {
+                    if (DOMDir.noopen) {
+                        return;
+                    }
+                    DirElement.openItemsOnWindow(DOMDir, true);
+                }
+            }
+        } else if (e.code === COMMAND_COPY) {
+            if (!e.ctrlKey) {
+                return;
+            }
+            if (btnType === DirElement.TYPE) {
+                const DOMDir = target.parentElement;
+                navigator.clipboard.writeText(DOMDir.btnTitle);
+            } else if (btnType === ItemElement.TYPE)  {
+                const DOMItem = target.parentElement;
+                navigator.clipboard.writeText(DOMItem.btnUrl);
+            }
+        } else if (e.code === COMMAND_DIRPARENT) {
+            if (e.ctrlKey || e.shiftKey) {
+                return;
+            }
+            let DOMDir;
+            DOMDir = (target?.parentElement?.parentElement) ?? undefined;
+            if (DOMDir !== undefined && DOMDir.btnType === DirElement.TYPE) {
+                DOMDir.firstElementChild.focus();
+            }
+        }
+    },
+    /**
+     * @type {(e: KeyboardEvent) => undefined | never} */
+    onkeydown(e) {
+        const target = e.target;
+        const btnType = target.btnType;
+        if (e.code === "Enter") {
+            if (btnType === DirElement.TYPE) {
+                const DOMSummary = target;
+                const DOMDir = target.parentElement;
+                if (DOMDir.hasAttribute("open")) {
+                    let y = (DOMDir.offsetTop
+                        - Main.MAIN.offsetTop
+                        - DOMSummary.clientHeight
+                    );
+                    if (Main.MAIN.scrollTop > y) {
+                        Main.MAIN.scroll(0, y);
+                    }
+                }
+            }
+        }
+    },
+    /**
+     * @throws {TypeError} A DOM element is null
+     * @type {(e: MouseEvent) => undefined}*/
+    onpointerover(e) {
+        let target = e.target;
+        let name = target.getAttribute("name");
+        if (name === "more") {
+            let DOMDir = target.parentElement.parentElement.parentElement;
+            let DOMButtonsMore = target.parentElement.nextElementSibling;
+            let top = (
+                Main.MAIN.offsetHeight
+                    + Main.MAIN.scrollTop
+                    - DOMButtonsMore.offsetHeight
+            );
+            if (top < DOMDir.offsetTop) {
+                DOMButtonsMore.setAttribute("css-position", "bottom");
+            } else {
+                DOMButtonsMore.setAttribute("css-position", "top");
+            }
+        }
+    },
+};
+
+/**
+ * @throws {Error} BookmarkTreeNode does not have index
+ * @type {(
+    root: chrome.bookmarks.BookmarkTreeNode,
+    depth: number,
+    DOMRoot: HTMLElement
+) => HTMLElement}*/
+function bookmarkTreeToDOM(root, depth, DOMRoot) {
+    const DOMStack = [DOMRoot];
+    const stack = [root];
+    let i = -1;
+    /**@type{chrome.bookmarks.BookmarkTreeNode}*/
+    let node = root; //only for init
+    /**@type{HTMLElement}*/
+    let DOMElement = DOMRoot; //only for init
+    while (stack.length > 0) {
+        node = stack[stack.length - 1];
+        if (node.children === undefined || i + 1 === node.children.length) {
+            stack.pop();
+            if (node.index === undefined) {
+                throw Error("BookmarkTreeNode does not have index");
+            }
+            i = node.index;
             DOMElement = DOMStack.pop();
             if (DOMStack.length > 0) {
                 DOMStack[DOMStack.length - 1].appendChild(DOMElement);
             }
             depth -= 1;
         } else {
-            u = u.children[idx + 1];
-
+            node = node.children[i + 1];
             depth += 1;
-            if (u.children !== undefined) {
-                DOMStack.push(
-                    createDOMDir(u, depth, DOMTemplateDir, DOMTemplateButtons)
-                );
+            if (node.children !== undefined) {
+                DOMStack.push(DirElement.create(node, depth));
             } else {
-                DOMStack.push(
-                    createDOMItem(u, depth, DOMTemplateItem, DOMTemplateButtons)
-                );
+                let DOMItem = ItemElement.create(node, depth)
+                if (DOMItem !== undefined) {
+                    DOMStack.push(DOMItem);
+                }
             }
-            stack.push(u);
-            idx = -1;
+            stack.push(node);
+            i = -1;
         }
     }
     return DOMRoot;
 }
 
 /**
-@type {(data: Array<BookmarkTreeNode>) => undefined | never} */
-function mainGetTree(data) {
-    if (data.length === 0
-        || data[0].children === undefined
-        || data[0].children.length === 0
-    ) {
-        panic("The bookmark roots does not exist");
+ * @throws {TypeError} A DOM element is null
+ * @type {(btroot: chrome.bookmarks.BookmarkTreeNode) => undefined}*/
+function createDOMRootTree(btroot) {
+    const fragment = document.createDocumentFragment();
+    for (let child of btroot.children) {
+        let DOMDir = DirElement.createRoot(child);
+        bookmarkTreeToDOM(child, 1, DOMDir);
+        fragment.appendChild(DOMDir);
     }
-    var children = data[0].children;
-    var DOMButtons = DOM.templateButtons.content.children;
-    var DOMBBookmark = DOMButtons[0];
-    var DOMBFolder = DOMButtons[1];
-    var DOMBSort = DOMButtons[4];
-
-    //Bookmarks
-    var child = children[0];
-    var DOMRoot = createDOMDir(child, 1, DOM.templateDir, undefined);
-    var DOMRight = DOMRoot.firstElementChild.children[1];
-    var CloneDOMBSort = DOMBSort.cloneNode(true);
-
-    DOMRoot.setAttribute("open", "true");
-
-    CloneDOMBSort.classList.add("c_center-children");
-
-    DOMRight.appendChild(DOMBBookmark.cloneNode(true));
-    DOMRight.appendChild(DOMBFolder.cloneNode(true));
-    DOMRight.appendChild(CloneDOMBSort);
-
-    if (child.children !== undefined
-        && child.children.length > 0
-    ) {
-        BTNToDOM(
-            child,
-            1,
-            DOMRoot,
-            DOM.templateDir,
-            DOM.templateItem,
-            DOM.templateButtons
-        );
+    if (fragment.children.length > 0) {
+        fragment.children[0].setAttribute("open", "");
     }
-    DOM.fragment.appendChild(DOMRoot);
-
-    //Other booksmarks
-    child = children[1];
-    DOMRoot = createDOMDir(child, 1, DOM.templateDir, undefined);
-    DOMRight = DOMRoot.firstElementChild.children[1];
-    CloneDOMBSort = DOMBSort.cloneNode(true);
-
-    CloneDOMBSort.classList.add("c_center-children");
-
-    DOMRight.appendChild(DOMBBookmark.cloneNode(true));
-    DOMRight.appendChild(DOMBFolder.cloneNode(true));
-    DOMRight.appendChild(CloneDOMBSort);
-
-    if (child.children !== undefined
-        && child.children.length > 0
-    ) {
-        BTNToDOM(
-            child,
-            1,
-            DOMRoot,
-            DOM.templateDir,
-            DOM.templateItem,
-            DOM.templateButtons
-        );
-    }
-    DOM.fragment.appendChild(DOMRoot);
-
-    DOM.main.appendChild(DOM.fragment);
+    Main.MAIN.appendChild(fragment);
 }
 
 /**
-@type {(e: MouseEvent) => undefined} */
-function DOMHeaderButtonsOnclick(e) {
-    var target = e.target;
-    var ButtonType = target.getAttribute(ATTR_DATA_BUTTONS);
-    if (ButtonType === null) {
-        panic("ButtonType is null");
-    }
-    if (ButtonType === DATA_BUTTONS_HBOOKMARKS) {
-        TabOptions.url = "about://bookmarks/";
-        TabOptions.active = true;
-        chrome.tabs.create(TabOptions, undefined);
-    } else if (ButtonType === DATA_BUTTONS_HMORE) {
-        DOM.modal.setAttribute("data-display", "1");
-        DOM.modal.setAttribute("data-show", "0");
-        DOM.modal.firstElementChild.children[1].lastElementChild.focus();
-        DOMFocused = target;
-    } else if (ButtonType === DATA_BUTTONS_HCLOSE) {
-        window.close();
+ * @type {(e: KeyboardEvent) => undefined} */
+function DOMOnkeyup(e) {
+    if (MoreModal.MODAL.hasAttribute("data-open")) {
+        if (e.code === COMMAND_MODAL_CLOSE || e.code === COMMAND_MODAL_MORE) {
+            closeModal(MoreModal.MODAL);
+        }
+    } else if (KeyboardModal.MODAL.hasAttribute("data-open")) {
+        if (e.code === COMMAND_MODAL_CLOSE || e.code === COMMAND_MODAL_KEYBOARD) {
+            closeModal(KeyboardModal.MODAL);
+        }
+    } else if (DirModal.MODAL.hasAttribute("data-open")) {
+        if (e.ctrlKey && e.code === COMMAND_MODAL_CLOSE) {
+            closeModal(DirModal.MODAL);
+        }
+    } else if (ItemModal.MODAL.hasAttribute("data-open")) {
+        if (e.ctrlKey && e.code === COMMAND_MODAL_CLOSE) {
+            closeModal(ItemModal.MODAL);
+        }
+    } else {
+        if (e.code === COMMAND_MODAL_KEYBOARD) {
+            KeyboardModal.open();
+        } else if (e.code === COMMAND_MODAL_MORE) {
+            MoreModal.open();
+        } else if (e.code === COMMAND_UNDO) {
+            Message.undo();
+        }
     }
 }
 
-/**
-BFTraversal
-@type {(root: BookmarkTreeNode, DOMElement: HTMLDivElement) => Promise<undefined>} */
-async function undoDirRemoved(root, DOMElement) {
-    var DOMRoot = DOMElement;
-    var DOMDirs = [DOMElement];
-    var ParentIds = [];
-    var dirIds = [];
-    var queue = [];
+Promise.all([
+    chrome.storage.local.get(),
+    chrome.bookmarks.getTree(),
+    chrome.tabs.query({active: true, currentWindow: true})
+]).then(
     /**
-    @type {BookmarkTreeNode} */
-    var u = root;
+     * @type{(data: [
+        typeof storage,
+        Array<chrome.bookmarks.BookmarkTreeNode>,
+        Array<chrome.tabs.Tab>
+    ]) => undefined}*/
+    function (data) {
+        let items = data[0];
+        let bmtree = data[1];
+        currenttab = data[2][0];
 
-    CreateOptions.url = u.url;
-    CreateOptions.index = u.index;
-    CreateOptions.title = u.title;
-    CreateOptions.parentId = u.parentId;
+        initStorage(items);
 
-    var BTNode = await chrome.bookmarks.create(CreateOptions, undefined);
-    DOMElement.setAttribute("data-id", BTNode.id);
+        MoreModal.init(storage);
+        document.firstElementChild?.setAttribute("class", storage.theme);
 
-    if (u.children.length > 0) {
-        ParentIds.push(BTNode.id);
-        Array.prototype.push.apply(queue, u.children);
-    }
-
-    while (queue.length > 0) {
-        u = queue.shift();
-        if (u.index === undefined) {
-            panic("BookmarkTreeNode.index is undefined");
-        }
-
-        var isDir = u.children !== undefined;
-        if (!isDir && dirIds.length > 0 && dirIds[0] === u.id) {
-            DOMDirs.shift();
-            dirIds.shift();
-            ParentIds.shift();
-        }
-
-        CreateOptions.url = u.url;
-        CreateOptions.index = u.index;
-        CreateOptions.title = u.title;
-        CreateOptions.parentId = ParentIds[0];
-
-        var BTNode = await chrome.bookmarks.create(CreateOptions, undefined);
-        DOMElement = DOMDirs[0].children[u.index + 1];
-        DOMElement.setAttribute("data-id", BTNode.id);
-
-        if (isDir && u.children.length > 0) {
-            DOMDirs.push(DOMElement);
-            ParentIds.push(BTNode.id);
-            dirIds.push(u.children[0].id);
-            Array.prototype.push.apply(queue, u.children);
-        }
-    }
-
-    DOM.messageUndo.setAttribute("data-display", "0");
-    DOMRoot.setAttribute("data-display", "1");
-    clearDeleteState();
-}
-
-/**
-@type {(BTNode: BookmarkTreeNode) => undefined} */
-function undoItemRemoved(BTNode) {
-    if (BTNode === undefined) {
-        return;
-    }
-    DeleteState.target.setAttribute("data-id", BTNode.id);
-    DeleteState.target.setAttribute("data-display", "1");
-
-    DOM.messageUndo.setAttribute("data-display", "0");
-
-    clearDeleteState();
-}
-
-function undo() {
-    if (DeleteState.timeout === undefined) {
-        console.warn("The undo action cannot be completed. The element was deleted");
-        clearDeleteState();
-        return;
-    }
-    clearTimeout(DeleteState.timeout);
-    if (DeleteState.target === null) {
-        panic("DeleteState.target is null");
-    }
-    var BTNode = DeleteState.BTNode;
-    if (BTNode === null) {
-        panic("DelteState.BTNode is null");
-    }
-    if (BTNode.children === undefined) {
-        CreateOptions.parentId = BTNode.parentId;
-        CreateOptions.url = BTNode.url;
-        CreateOptions.index = BTNode.index;
-        CreateOptions.title = BTNode.title;
-        chrome.bookmarks.create(CreateOptions, undoItemRemoved);
-    } else {
-        undoDirRemoved(BTNode, DeleteState.target);
-    }
-}
-
-/**
-@type {(e: MouseEvent) => undefined} */
-function DOMMessageUndoOnclick(e) {
-    var target = e.target;
-    var buttonType = target.getAttribute(ATTR_DATA_BUTTONS);
-
-    if (buttonType === DATA_BUTTONS_MCLOSE) {
-        clearTimeout(DeleteState.timeout);
-        DeleteState.target.remove();
-        DOM.messageUndo.setAttribute("data-display", "0");
-        clearDeleteState();
-
-    } else if (buttonType === DATA_BUTTONS_MUNDO) {
-        undo();
-        if (DOMFocused !== null) {
-            DOMFocused.focus();
-            DOMFocused = null;
-        }
-    }
-}
-
-/**
-@type {(target: HTMLDivElement) => undefined} */
-function removeBTNode(target) {
-    target.remove();
-    DOM.messageUndo.setAttribute("data-display", "0");
-    clearDeleteState();
-}
-
-/**
-@type {(data: Array<BookmarkTreeNode>) => undefined} */
-function futureRemove(data) {
-    if (data.length === 0) {
-        if (DeleteState.target !== null) {
-            DeleteState.target.remove();
-        }
-        clearDeleteState();
-        return;
-    }
-    var BTNode = data[0];
-    DeleteState.BTNode = BTNode;
-
-    DOM.messageUndo.setAttribute("data-display", "1");
-    DOM.messageUndo?.lastElementChild?.firstElementChild.focus();
-
-    var DOMMessageUChildren = DOM.messageUndo.children;
-    DOMMessageUChildren[0].textContent = BTNode.title;
-    DOMMessageUChildren[1].textContent = "removed";
-
-    if (BTNode.url === undefined) {
-        //is a DIR
-        chrome.bookmarks.removeTree(BTNode.id, undefined);
-    } else {
-        //is a Item
-        chrome.bookmarks.remove(BTNode.id, undefined);
-    }
-
-    DeleteState.timeout = setTimeout(
-        removeBTNode,
-        2000,
-        DeleteState.target,
-    );
-}
-
-/**
-@type {(target: HTMLButtonElement) => undefined} */
-function DOMBRemoveOnclick(target) {
-    if (DeleteState.timeout !== undefined) {
-        clearTimeout(DeleteState.timeout);
-        DeleteState.target.remove();
-    }
-
-    var DOMRight = target.parentElement;
-    var DOMType = DOMRight.getAttribute("data-parent");
-    var id = "";
-
-    if (DOMType === DATA_TYPE_DIR) {
-        var DOMDir = DOMRight.parentElement.parentElement;
-        DOMDir.setAttribute("data-display", "0");
-        id = DOMDir.getAttribute("data-id");
-        DeleteState.target = DOMDir;
-        chrome.bookmarks.getSubTree(id, futureRemove);
-
-    } else /*must be DATA_TYPE_ITEM */ {
-        var DOMItem = DOMRight.parentElement;
-        DOMItem.setAttribute("data-display", "0");
-        id = DOMItem.getAttribute("data-id");
-        DeleteState.target = DOMItem;
-        chrome.bookmarks.get(id, futureRemove);
-    }
-}
-
-/**
-@type {(result: Array<BookmarkTreeNode>) => undefined} */
-function setDOMFormEdit(result) {
-    var DOMForm = DOM.modalForm;
-    if (result.length === 0) {
-        panic("What the fuck, data is empty");
-    }
-    var bookmark = result[0];
-
-    if (bookmark.title !== undefined) {
-        DOMForm[0].value = bookmark.title;
-    }
-    if (bookmark.url !== undefined) {
-        DOMForm[1].value = bookmark.url;
-    }
-
-    DOM.modal.setAttribute("data-display", "1");
-    DOM.modal.setAttribute("data-show", "1");
-
-    DOMForm[0].focus();
-
-}
-
-/**
-@type {(target: HTMLButtonElement) => undefined | never} */
-function DOMBEditOnclick(target) {
-    var DOMModalEdit = DOM.modal.children[1];
-    var DOMRight = target.parentElement;
-    var DOMType = DOMRight.getAttribute("data-parent");
-    var id = "";
-    ModalState.formType = DATA_FORM_EDIT;
-    if (DOMType === DATA_TYPE_DIR) {
-        let DOMModalEditTitle = (
-            DOMModalEdit.firstElementChild.firstElementChild
-        );
-        DOMModalEditTitle.textContent = "Edit folder";
-        let DOMDir = DOMRight.parentElement.parentElement;
-        ModalState.target = DOMDir;
-        let dataid = DOMDir.getAttribute("data-id");
-        if (dataid !== null) {
-            id = dataid;
-        }
-    } else /*must be DATA_TYPE_ITEM */ {
-        let DOMModalEditTitle = (
-            DOMModalEdit.firstElementChild.firstElementChild
-        );
-        DOMModalEditTitle.textContent = "Edit bookmark";
-        let DOMItem = DOMRight.parentElement;
-        ModalState.target = DOMItem;
-        let dataid = DOMItem.getAttribute("data-id");
-        if (dataid !== null) {
-            id = dataid;
-        }
-    }
-
-    if (id.length === 0) {
-        panic("id is empty");
-    }
-
-    ModalState.id = id;
-    ModalState.type = DOMType;
-
-    DOMModalEdit.setAttribute("data-edit", DOMType);
-    chrome.bookmarks.get(id, setDOMFormEdit);
-}
-
-/**
-@type {(
-    target: HTMLButtonElement,
-    DOMType: "0" | "2",
-    ctrKey: boolean
-) => undefined | never} */
-function createOptionsOnclick(DOMDir, DOMType, ctrKey) {
-    var DOMForm = DOM.modalForm;
-    var id = DOMDir.getAttribute("data-id");
-    if (id === null) {
-        panic("id is null");
-    }
-    ModalState.parentId = id;
-    ModalState.formType = DATA_FORM_CREATE;
-    ModalState.target = DOMDir;
-
-    ModalState.depth = Number(DOMDir.getAttribute("data-depth"));
-
-    var DOMModalCreateOptions = DOM.modal.children[1];
-    DOMModalCreateOptions.setAttribute("data-edit", DOMType);
-
-    if (DOMType === DATA_TYPE_DIR) {
-        DOMModalCreateOptions
-            .firstElementChild
-            .firstElementChild
-            .textContent = "CreateOptions folder";
-    } else {
-        if (!ctrKey) {
-            DOMForm[0].value = CurrentTab.title;
-            DOMForm[1].value = CurrentTab.url;
-        }
-        DOMModalCreateOptions
-            .firstElementChild
-            .firstElementChild
-            .textContent = "CreateOptions bookmark";
-    }
-
-    DOM.modal.setAttribute("data-display", "1");
-    DOM.modal.setAttribute("data-show", "1");
-    DOMForm[0].focus();
-}
-
-/**
-@type {(BTChildren: Array<BookmarkTreeNode>) => Promise<undefined | never>} */
-async function getChildrenSort(BTChildren) {
-    sort(BTChildren);
-    if (SortState.target === null) {
-        panic("SortState.target is null");
-    }
-    const DOMChildren = SortState.target.children;
-    const DOMCSorted = [DOMChildren[0]];
-    for (let i = 0; i < BTChildren.length; i += 1) {
-        var BTNode = BTChildren[i];
-        MoveOptions.index = i;
-        MoveOptions.parentId = SortState.parentId;
-        await chrome.bookmarks.move(BTNode.id, MoveOptions);
-        DOMCSorted.push(DOMChildren[BTNode.index + 1]);
-    }
-    Element.prototype.replaceChildren.apply(
-        SortState.target,
-        DOMCSorted
-    );
-    SortState.target = null;
-    SortState.parentId = "";
-}
-
-
-/**
-@type {(DOMDir: HTMLDivElement) => undefined} */
-function DOMBSortOnclick(DOMDir) {
-    let id = DOMDir.getAttribute("data-id");
-    if (id === null) {
-        panic("data-id is null");
-    }
-    SortState.target = DOMDir;
-    SortState.parentId = id;
-    chrome.bookmarks.getChildren(id, getChildrenSort);
-}
-
-/**
-@type {(data: Array<BookmarkTreeNode>) => undefined}*/
-function DOMBOpenOnclick(data) {
-    if (data === undefined || data.length === 0) {
-        return;
-    }
-    TabOptions.active = false;
-    for (let i = 0; i < data.length; i += 1) {
-        var BTNode = data[i];
-        if (BTNode.url !== undefined) {
-            TabOptions.url = BTNode.url;
-            chrome.tabs.create(TabOptions);
-        }
-    }
-}
-
-const WindowOptions = {
-    incognito: false,
-    url: [],
-    setSelfAsOpener: false,
-};
-/**
-@type {(data: Array<BookmarkTreeNode>) => undefined}*/
-function DOMBOpenWOnclick(data) {
-    if (data === undefined || data.length === 0) {
-        return;
-    }
-    WindowOptions.url.length = 0;
-
-    for (let i = 0; i < data.length; i += 1) {
-        var BTNode = data[i];
-        if (BTNode.url !== undefined) {
-            WindowOptions.url.push(BTNode.url);
-        }
-    }
-    chrome.windows.create(WindowOptions);
-}
-
-/**
-@type {(e: MouseEvent) => undefined} */
-function DOMMainOnclick(e) {
-    var target = e.target;
-    const DOMType = target.getAttribute(ATTR_DATA_TYPE);
-    if (DOMType === DATA_TYPE_BREMOVE) {
-        e.preventDefault();
-        DOMBRemoveOnclick(target);
-    } else if (DOMType === DATA_TYPE_BSORT) {
-        e.preventDefault();
-        let DOMDir = target.parentElement.parentElement.parentElement;
-        DOMBSortOnclick(DOMDir);
-    } else if (DOMType === DATA_TYPE_BOPEN) {
-        e.preventDefault();
-        let DOMDir = target.parentElement.parentElement.parentElement;
-        let id = DOMDir.getAttribute("data-id");
-        chrome.bookmarks.getChildren(id, DOMBOpenOnclick);
-    } else if (DOMType === DATA_TYPE_BOPENW) {
-        e.preventDefault();
-        let DOMDir = target.parentElement.parentElement.parentElement;
-        let id = DOMDir.getAttribute("data-id");
-        WindowOptions.incognito = false;
-        chrome.bookmarks.getChildren(id, DOMBOpenWOnclick);
-    } else if (DOMType === DATA_TYPE_BOPENI) {
-        e.preventDefault();
-        let DOMDir = target.parentElement.parentElement.parentElement;
-        let id = DOMDir.getAttribute("data-id");
-        WindowOptions.incognito = true;
-        chrome.bookmarks.getChildren(id, DOMBOpenWOnclick);
-    } else if (DOMType === DATA_TYPE_BEDIT) {
-        e.preventDefault();
-        DOMBEditOnclick(target);
-    } else if (DOMType === DATA_TYPE_BFOLDER) {
-        e.preventDefault();
-        let DOMDir = target.parentElement.parentElement.parentElement;
-        createOptionsOnclick(DOMDir, DATA_TYPE_DIR, false);
-    } else if (DOMType === DATA_TYPE_BBOOKMARK) {
-        e.preventDefault();
-        let DOMDir = target.parentElement.parentElement.parentElement;
-        createOptionsOnclick(DOMDir, DATA_TYPE_ITEM, e.ctrlKey);
-    } else if (DOMType === DATA_TYPE_ITEMCONTENT) {
-        if (!e.shiftKey) {
-            e.preventDefault();
-            var href = target.getAttribute("href");
-            openLink(href, e.ctrlKey);
-        }
-    }
-}
-
-/**
-@type {(e: KeyboardEvent) => undefined} */
-function DOMMainOnkeydown(e) {
-    var target = e.target;
-    var DOMTarget;
-    var type = target.getAttribute(ATTR_DATA_TYPE);
-    if (type === DATA_TYPE_SUMMARY) {
-        if (e.code === "KeyR") {
-            DOMFocused = target;
-            DOMTarget = target?.lastElementChild?.lastElementChild;
-            if (DOMTarget !== null || DOMTarget !== undefined) {
-                DOMBRemoveOnclick(DOMTarget);
-            }
-        } else if (e.code === "KeyE") {
-            DOMFocused = target;
-            DOMTarget = target?.children[1]?.children[2];
-            if (DOMTarget.getAttribute(ATTR_DATA_TYPE) === DATA_TYPE_BEDIT) {
-                DOMBEditOnclick(DOMTarget);
-            }
-        } else if (e.code === "KeyC") {
-            e.preventDefault();
-            DOMFocused = target;
-            let DOMDir = target.parentElement;
-            createOptionsOnclick(DOMDir, DATA_TYPE_DIR, false);
-        } else if (e.code === "KeyA") {
-            e.preventDefault();
-            DOMFocused = target;
-            let DOMDir = target.parentElement;
-            createOptionsOnclick(DOMDir, DATA_TYPE_ITEM, e.ctrlKey);
-        } else if (e.code === "KeyS") {
-            DOMBSortOnclick(target.parentElement);
-        } else if (e.code === "KeyO") {
-            let id = target.parentElement.getAttribute("data-id");
-            if (id === "1" || id === "2") {
-                return;
-            }
-            if (e.shiftKey) {
-                WindowOptions.incognito = false;
-                chrome.bookmarks.getChildren(id, DOMBOpenWOnclick);
-            } else {
-                chrome.bookmarks.getChildren(id, DOMBOpenOnclick);
-            }
-        }
-    } else if (type === DATA_TYPE_ITEMCONTENT) {
-        if (e.code === "KeyR") {
-            DOMFocused = target;
-            DOMBRemoveOnclick(target?.nextElementSibling?.lastElementChild);
-        } else if (e.code === "KeyE") {
-            DOMFocused = target;
-            DOMBEditOnclick(target?.nextElementSibling?.firstElementChild);
-        }
-    }
-
-}
-
-/**
-@type {(e: MouseEvent) => undefined} */
-function DOMMainOnauxclick(e) {
-    var target = e.target;
-    var DOMType = target.getAttribute(ATTR_DATA_TYPE);
-    if (DOMType === DATA_TYPE_ITEMCONTENT) {
-        e.preventDefault();
-        var href = target.getAttribute("href");
-        TabOptions.url = href;
-        TabOptions.active = StorageState.focusTabs;
-        chrome.tabs.create(TabOptions, undefined);
-    }
-}
-
-/**
-@type {(e: PointerEvent) => undefined} */
-function DOMMainOnpointerover(e) {
-    var target = e.target;
-    var DOMType = target.getAttribute(ATTR_DATA_TYPE);
-    if (DOMType === DATA_TYPE_BMORE) {
-        var DOMDir = target.parentElement.parentElement.parentElement;
-        var DOMMore = target.parentElement.nextElementSibling;
-        var top = (
-            DOM.main.offsetHeight
-            + DOM.main.scrollTop
-            - (
-                DOMMore.offsetHeight
-                + target.parentElement.parentElement.offsetHeight //DirHeader
-            )
-        );
-        if (top < DOMDir.offsetTop) {
-            DOMMore.style.setProperty("top", "unset");
-            DOMMore.style.setProperty("bottom", "30px");
+        if (bmtree.length === 1
+            && bmtree[0].children !== undefined
+            && bmtree[0].children.length > 0
+        ) {
+            createDOMRootTree(bmtree[0]);
         } else {
-            DOMMore.style.setProperty("top", "30px");
-            DOMMore.style.setProperty("bottom", "unset");
+            throw Error("The root BookmarkTreeNode is empty");
         }
-    }
-}
 
-/**
-@type {() => undefined} */
-function closeDOMModal() {
-    var show = DOM.modal.getAttribute("data-show");
-    if (show === "1") {
-        if (ModalState.formType === DATA_FORM_CREATE) {
-            clearCreateOptions();
-        }
-        clearModalState();
 
-        var DOMModalEdit = DOM.modal.children[1];
-        DOMModalEdit.setAttribute("data-edit", "");
+        document.addEventListener("keyup", DOMOnkeyup, true);
 
-        var DOMForm = DOM.modalForm;
-        DOMForm[0].value = "";
-        DOMForm[1].value = "";
-        DOM.modal.setAttribute("data-display", "0");
-        DOM.modal.setAttribute("data-show", "");
-    }
-    DOM.modal.setAttribute("data-display", "0");
-    DOM.modal.setAttribute("data-show", "");
-}
+        HeaderNav.NAV.addEventListener("click", HeaderNav.onclick, false);
+        HeaderNav.NAV.addEventListener("auxclick", HeaderNav.onauxclick, false);
 
-/**
-@type {(e: MouseEvent) => undefined} */
-function DOMModalOnclick(e) {
-    var target = e.target;
-    var domType = target.getAttribute(ATTR_DATA_TYPE);
-    if (domType == DATA_TYPE_MODAL || domType === DATA_TYPE_BREMOVE) {
-        closeDOMModal();
-    }
-}
+        Main.MAIN.addEventListener("click", Main.onclick, false);
+        Main.MAIN.addEventListener("auxclick", Main.onauxclick, false);
+        Main.MAIN.addEventListener("pointerover", Main.onpointerover, false);
+        Main.MAIN.addEventListener("keyup", Main.onkeyup, false);
+        Main.MAIN.addEventListener("keydown", Main.onkeydown, false);
 
-/**
-@type {(e: KeyboardEvent) => undefined} */
-function DOMModalOnkeydown(e) {
-    if (e.code === "Escape") {
-        e.preventDefault();
-        closeDOMModal();
-        if (DOMFocused !== null) {
-            DOMFocused.focus();
-            DOMFocused = null;
-        }
-    }
-}
+        Message.MESSAGE.addEventListener("click", Message.onclick, false);
+        Message.MESSAGE.addEventListener("keyup", Message.onkeyup, false);
+        Message.MESSAGE.addEventListener("keydown", Message.onkeydown, false);
 
-/**
-@type {(result: BookmarkTreeNode) => undefined} */
-function updateBookmarkTN(result) {
-    if (result === undefined) {
-        return;
-    }
-    if (ModalState.target === null) {
-        panic("ModalState.target is null");
-    }
-    if (result.url === undefined) {
-        updateDOMDir(ModalState.target, result.title);
-    } else {
-        updateDOMItem(ModalState.target, result.title, result.url);
-    }
-    clearModalState();
-}
+        DirModal.MODAL.addEventListener("click", ModalOnclick, false);
+        DirModal.FORM.addEventListener("submit", DirModal.onsubmit, false);
 
-const BMNode = {
-    id: "",
-    title: "",
-    url: "",
-};
+        ItemModal.MODAL.addEventListener("click", ModalOnclick, false);
+        ItemModal.FORM.addEventListener("submit", ItemModal.onsubmit, false);
 
-function clearBMNode() {
-    BMNode.id = "";
-    BMNode.title = "";
-    BMNode.url = "";
-}
+        MoreModal.MODAL.addEventListener("click", ModalOnclick, false);
+        MoreModal.FORM.addEventListener("change", MoreModal.onchange, false);
 
-/**
-@type {(result: BookmarkTreeNode) => undefined} */
-function createBookmarkTN(result) {
-    if (result === undefined) {
-        return;
+        KeyboardModal.MODAL.addEventListener("click", ModalOnclick, false);
     }
-    if (ModalState.target === null) {
-        panic("ModalState.target is null");
-    }
-    var DOMElement;
-    BMNode.id = result.id;
-    BMNode.title = result.title;
-    if (result.url === undefined) {
-        DOMElement = createDOMDir(
-            BMNode,
-            ModalState.depth + 1,
-            DOM.templateDir,
-            DOM.templateButtons
-        );
-    } else {
-        BMNode.url = result.url;
-        DOMElement = createDOMItem(
-            BMNode,
-            ModalState.depth + 1,
-            DOM.templateItem,
-            DOM.templateButtons
-        );
-    }
-    ModalState.target.appendChild(DOMElement);
-    clearCreateOptions();
-    clearModalState();
-}
-
-/**
-@type {(e: SubmitEvent) => undefined | never} */
-function DOMModalFormOnsubmit(e) {
-    e.preventDefault();
-    var DOMForm = DOM.modalForm;
-    var DOMModal = DOM.modal?.children[1];
-    var title = DOMForm[0].value;
-    if (ModalState.formType === DATA_FORM_EDIT) {
-        Changes.title = title;
-        if (ModalState.type === DATA_TYPE_DIR) {
-            Changes.url = "";
-        } else{
-            var url = DOMForm[1].value;
-            Changes.url = url;
-        }
-        chrome.bookmarks.update(ModalState.id, Changes, updateBookmarkTN);
-    } else {
-        CreateOptions.parentId = ModalState.parentId;
-        CreateOptions.title = title;
-        if (ModalState.type === DATA_TYPE_DIR) {
-            CreateOptions.url = undefined;
-        } else {
-            var url = DOMForm[1].value;
-            CreateOptions.url = url;
-        }
-        chrome.bookmarks.create(CreateOptions, createBookmarkTN);
-    }
-
-    DOMModal.setAttribute("data-edit", "");
-
-    DOMForm[0].value = "";
-    DOMForm[1].value = "";
-    DOM.modal.setAttribute("data-display", "0");
-    DOM.modal.setAttribute("data-show", "");
-
-    if (DOMFocused !== null) {
-        DOMFocused.focus();
-        DOMFocused = null;
-    }
-}
-
-/**
-@type {(e: Event) => undefined} */
-function DOMModalConfigThemeOnchange(e) {
-    var target = e.currentTarget;
-    StorageState.theme = target.value;
-    document.firstElementChild?.setAttribute("class", target.value);
-    chrome.storage.local.set(StorageState, undefined);
-}
-
-/**
-@type {(e: Event) => undefined} */
-function DOMModalConfigOpenOnchange(e) {
-    var target = e.currentTarget;
-    StorageState.open = target.value;
-    chrome.storage.local.set(StorageState, undefined);
-}
-
-/**
-@type {(e: Event) => undefined} */
-function DOMModalConfigFocusOnchange(e) {
-    var target = e.currentTarget;
-    StorageState.focusTabs = target.checked;
-    chrome.storage.local.set(StorageState, undefined);
-}
-
-/**
-@type {(e: Event) => undefined} */
-function DOMModalConfigFoldersOnchange(e) {
-    var target = e.currentTarget;
-    StorageState.foldersBefore = target.checked;
-    chrome.storage.local.set(StorageState, undefined);
-}
-
-/**
-@type {(data: Array<Tab>) => undefined} */
-function futureMain(data) {
-    CurrentTab = data[0];
-
-    DOM.headerButtons.onclick = DOMHeaderButtonsOnclick;
-    DOM.messageUndo.lastElementChild.onclick = DOMMessageUndoOnclick;
-    DOM.main.onclick = DOMMainOnclick;
-    DOM.main.onauxclick = DOMMainOnauxclick;
-    DOM.main.onpointerover = DOMMainOnpointerover;
-    DOM.main.onkeydown = DOMMainOnkeydown;
-
-    DOM.modalConfigTheme.onchange = DOMModalConfigThemeOnchange;
-    DOM.modalConfigOpen.onchange = DOMModalConfigOpenOnchange;
-    DOM.modalConfigFocus.onchange = DOMModalConfigFocusOnchange;
-    DOM.modalConfigFolders.onchange = DOMModalConfigFoldersOnchange;
-
-    DOM.modal.onclick = DOMModalOnclick;
-    DOM.modal.onkeydown = DOMModalOnkeydown;
-    DOM.modalForm.onsubmit = DOMModalFormOnsubmit;
-
-    chrome.bookmarks.getTree(mainGetTree);
-}
-
-/**
-@type {() => undefined | never} */
-function main() {
-    DOM.templateDir = document.getElementById("template_dir");
-    if (DOM.templateDir === null) {
-        panic("DOM.templateDir is null");
-    }
-    DOM.templateItem = document.getElementById("template_item");
-    if (DOM.templateItem === null) {
-        panic("DOM.templateItem is null");
-    }
-    DOM.templateButtons = document.getElementById("template_buttons");
-    if (DOM.templateButtons === null) {
-        panic("DOM.templateButtons is null");
-    }
-    DOM.headerButtons = document.getElementById("header_buttons");
-    if (DOM.headerButtons === null) {
-        panic("DOM.headerButtons is null");
-    }
-    DOM.messageUndo = document.getElementById("message_undo");
-    if (DOM.messageUndo === null) {
-        panic("DOM.messageUndo is null");
-    }
-    DOM.main = document.getElementById("main");
-    if (DOM.main === null) {
-        panic("DOM.main is null");
-    }
-    DOM.modal = document.getElementById("modal");
-    if (DOM.modal === null) {
-        panic("DOM.modal is null");
-    }
-    DOM.modalForm = document.getElementById("modal_form");
-    if (DOM.modalForm === null) {
-        panic("DOM.modalForm is null");
-    }
-    DOM.modalConfigTheme = document.getElementById("modal_config-theme");
-    if (DOM.modalConfigTheme === null) {
-        panic("DOM.modalConfigTheme is null");
-    }
-    DOM.modalConfigOpen = document.getElementById("modal_config-open");
-    if (DOM.modalConfigOpen === null) {
-        panic("DOM.modalConfigOpen is null");
-    }
-    DOM.modalConfigFocus = document.getElementById("modal_config-focus");
-    if (DOM.modalConfigFocus === null) {
-        panic("DOM.modalConfigFocus is null");
-    }
-    DOM.modalConfigFolders = document.getElementById("modal_config-folders");
-    if (DOM.modalConfigFolders === null) {
-        panic("DOM.modalConfigFolders is null");
-    }
-
-    chrome.storage.local.get(undefined, getStorage);
-    chrome.tabs.query({active: true, currentWindow: true}, futureMain);
-}
-window.addEventListener("DOMContentLoaded", main);
+);

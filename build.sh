@@ -10,6 +10,7 @@ fi
 
 if [[ ! -d "./extension/images" ]]; then
     cp -dr ./src/images ./extension
+    echo copy ./src/imaged to ./extension
 fi
 
 bun build ./src/main.js --outdir ./extension --minify

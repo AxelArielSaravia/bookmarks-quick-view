@@ -1,4 +1,4 @@
-### ![Bookmarks Quick View](./media/promotion/marquee.png) v0.1.4
+### ![Bookmarks Quick View](./media/promotion/marquee.png) v0.2.0
 created by Axel Ariel Saravia
 
 ---
@@ -15,7 +15,7 @@ This extension is created for my own necessities. If you have some bugs or you n
 - create folders.
 - add the current tab as bookmark in any folder.
 - open a complete folder in the current, new or private windows.
-- sort A-Z.
+- sort by name.
 - sort folders before bookmarks.
 - shortcut button to the bookmark manager
 
@@ -23,24 +23,42 @@ This extension is created for my own necessities. If you have some bugs or you n
 - You can set if the url opens in the current tab or in a new tab.
 - You can specify when a new tab is opens, go to it (focus it) or stay in your current tab.
 - You can decide if folders sort before bookmarks or not
+- You can decide if the created bookmark or folder adds to the beginning of the parent folder.
 
 ### Some keyboard shortcuts:
 
 | Command | Description |
 | --- | ---|
-| <kbd>Ctrl</kbd> + <kbd>Enter</kbd> or <kbd>Ctrl</kbd> + mouse click| Opens the url in a contrary way of the configurations
-| <kbd>Shift</kbd> + <kbd>Enter</kbd> or <kbd>Shift</kbd> + mouse click| Opens the url in a new windows |
-|--- | --- |
-| <kbd>R</kbd>| Remove the url or folder focused |
-| <kbd>E</kbd>| Edit the url or a folder focused |
-| <kbd>A</kbd>| Add the current tab inside the folder focused |
-| <kbd>A</kbd> + <kbd>Ctrl</kbd>| Add an url inside the folder focused |
-| <kbd>C</kbd>| Create a folder inside the folder focused |
-| <kbd>S</kbd>| Sort A-Z the folder focused |
-| <kbd>O</kbd>| Open all urls of the folder focused |
-| <kbd>O</kbd> + <kbd>Shift</kbd>| Open all urls of the folder focused on a new windows |
+| <kbd>Tab</kbd> | normal navigation. |
+| <kbd>Space</kbd> | open and lcose folders. |
+| <kbd>Enter</kbd> | open and close folders or open a link. |
+| <kbd>Ctrl</kbd> + <kbd>q</kbd> | close any kind of modal. |
+| <kbd>Ctrl</kbd> + <kbd>c</kbd> | copy folder title or link url on clipboard. |
+| <kbd>d</kbd> | focus the parent folder. |
+| <kbd>Ctrl</kbd> + <kbd>Enter</kbd> | on links, opens the link in a contrary way that the open behavior |
+| <kbd>Ctrl</kbd> + <kbd>mouse click</kbd> | on links, opens the link in a contrary way that the open behavior |
+| <kbd>Shift</kbd> + <kbd>Enter</kbd> | on links, opens the link in a new windows |
+| <kbd>Shift</kbd> + <kbd>mouse click</kbd> | on links, opens the link in a new windows |
+| <kbd>f</kbd> | create new folder inside the current folder. |
+| <kbd>Shift</kbd> + <kbd>f</kbd> | create new folder inside the parent folder. |
+| <kbd>b</kbd> | create new bookmark inside the current folder. |
+| <kbd>Shift</kbd> + <kbd>b</kbd> | create new bookmark inside the parent folder. |
+| <kbd>v</kbd> | opens the "create bookmark modal" with empty fields to create a new bookmark inside the current folder. |
+| <kbd>Shift</kbd> + <kbd>v</kbd> | opens the "create bookmark modal" with empty fields to create a new bookmark inside the parent folder. |
+| <kbd>r</kbd> | remove link or folder. |
+| <kbd>e</kbd> | edit folder or link. |
+| <kbd>u</kbd> | undo last remove link or folder (in the undo timeout). |
+| <kbd>s</kbd> | sort the current folder. |
+| <kbd>Shift</kbd> + <kbd>s</kbd> | sort the parent folder. |
+| <kbd>o</kbd> | on foldres, open all links in the current folder. |
+| <kbd>Shift</kbd> + <kbd>o</kbd> | on folders, open all links in the current folder in a new window. |
+| <kbd>Shift</kbd> + <kbd>i</kbd> | on folders, open all links in the current folder in a incognito window. |
+| <kbd>m</kbd> | open or close the "more modal". |
+| <kbd>k</kbd> | open or close the "keyboard modal". |
 ---
 
-The icons used in the extension are from [Feather Icons](https://feathericons.com/).
+The icons used in the extension are from
+[Feather Icons](https://feathericons.com/) and
+[Lucide](https://lucide.dev/).
 
 The inspiration of this extension comes from the [Edge Browser](https://www.microsoft.com/en-us/edge) bookmark extension.

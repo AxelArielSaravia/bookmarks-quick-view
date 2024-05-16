@@ -1,31 +1,44 @@
 :root {
     --font: verdada,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;
-    --header-height: 52px;
 
-    --icon-size-n: 20px;
-    --icon-size-s: 15px;
+    --icon-size: 20px;
+    --icon-size-small: 15px;
 
-    --font-size-n: 1.4rem;
-    --font-size-s: 1.3rem;
-    --root-font-size: 10px;
+    --font-size: 1.4rem;
 
-    --e-height: 35px;
-    --e-padding: 0 10px;
+    --z-index-mid: 2;
+    --z-index-high: 3;
 
-    --rb-right: 5px;
+    --item-height: 35px;
 
-    --root-padding: 5px;
+    --border-radius: 5px;
 
-    font-size: var(--root-font-size);
-
-    background: #000;
-    display:flex;
-    align-items:center;
-    justify-content: center;
-    height: 100vh;
+    /*height: 596px;*/
 }
 
-:root.dark {
+html {
+    background: #000;
+    font-size: 10px;
+    box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    position: relative;
+    width: 380px;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font);
+    background: var(--color-bg);
+    color: var(--color);
+}
+
+html.d {
     --color: #efe8e8;
     --color-bg: #3d3d3d;
     --color-bg-d: #2b2b2b;
@@ -36,7 +49,7 @@
     color-scheme: dark;
 }
 
-:root.light {
+html.l {
     --color: #3d3d3d;
     --color-bg: #efe8e8;
     --color-bg-d: #ddd6d6;
@@ -47,497 +60,532 @@
     color-scheme: light;
 }
 
-/*General*/
-* {
-    box-sizing: border-box;
-}
-
-body {
-    position: relative;
-    width: 380px;
-    margin: 0;
-    overflow: hidden;
-
-    font-family: var(--font);
-    font-size: var(--root-font-size);
-
-    background: var(--color-bg);
-    color: var(--color);
-    padding-bottom: 5px;
-}
-
-h1,h2,h3,p {
+:is(h1, h2, h3, p, select, input[type="text"]) {
+    font-size: var(--font-size);
     margin: 0;
 }
 
-a,button,select {
+:is(button, select, input[type="checkbox"], summary) {
     cursor: pointer;
 }
 
-a,button {
-    border: none;
+a {
     color: var(--color);
-    font-family: var(--font);
     text-decoration: none;
-    box-shadow: unset;
+}
+select {
+    padding: 4px;
 }
 
-[data-display="0"] {
-    display: none !important;
-}
-
-[data-visible="0"] {
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    height: 1px;
-    overflow: hidden;
-    position: absolute;
-    white-space: nowrap;
-    width: 1px;
-}
-
-.c_bold {
-    font-weight: 600;
-}
-
-.c_center-children {
+button {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    border: none;
+    padding: 5px;
+    color: var(--color);
+    font-family: var(--font);
+    border-radius: var(--border-radius);
 }
 
-.c_space-between-children {
+button:hover {
+    background: var(--color-hover-l);
+}
+
+button:not(:hover) {
+    background: transparent;
+}
+
+kbd {
+    font-family: monospace;
+    border: 1px solid var(--color);
+    border-radius: 5px;
+    padding: 2px 4px;
+}
+
+summary::marker {
+    content: "";
+}
+
+.shell {
+    position: relative;
+}
+
+.shell::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.icon {
+    width: var(--icon-size);
+}
+
+
+/*BODY*/
+.extension_header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-}
-
-.c_shell::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-}
-
-/*Components*/
-
-
-/* header */
-
-header {
     padding: 10px;
-    border-bottom: 2px solid var(--color-hover);
 }
 
-header h1 {
-    font-size: var(--font-size-n);
+.extension_header h1 {
+    font-weight: 600;
     padding: 5px;
 }
 
-header .right {
-    display:flex;
+.extension_header nav {
+    display: flex;
+    align-items: center;
 }
 
-header .right button {
-    position: relative;
+.extension_main {
+    --item-height: 35px;
+    height: 546px;
     padding: 5px;
-}
-
-header .right button:not(:hover){
-    background: transparent;
-}
-
-header .right button:hover {
-    background: var(--color-hover);
-}
-
-header .right button .icon {
-    width: var(--icon-size-n);
-}
-
-/* message delete */
-
-.message-undo {
-    --mu-padding: 10px;
-    position: fixed;
-    z-index: 3;
-    transform: translate(5%, 5px);
-    display: flex;
-    width: 90%;
-    background: var(--color-bg-d);
-    padding: var(--mu-padding);
-    font-size: var(--font-size-n);
-}
-
-.message-undo .content {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.message-undo .type {
-    padding: 0 80px 0 10px;
-}
-
-.message-undo .right {
-    display: flex;
-    position: absolute;
-    right: var(--mu-padding);
-}
-
-.message-undo .right button {
-    position:relative;
-}
-
-.message-undo .right .undo {
-    margin-right: 10px;
-}
-.message-undo .right .close {
-    padding: 0;
-}
-
-.message-undo .right button .icon {
-    width: var(--icon-size-s);
-}
-
-.message-undo .right button:hover {
-    background: var(--color-hover-l);
-}
-
-.message-undo .right button:not(:hover) {
-    background: var(--color-hover);
-}
-
-
-/* main */
-
-main {
+    border-top: 1px solid var(--color-hover-l);
+    line-height: 2;
     overflow: auto;
-    height: 543px;
-    padding: 5px;
+    user-select: none;
 }
 
-main::-webkit-scrollbar {
-    /* width of the entire scrollbar */
+.extension_main::-webkit-scrollbar {
     width: 8px;
 }
 
-main::-webkit-scrollbar-thumb {
-    /* color of the scroll thumb */
-    background-color:var(--color-hover);
+.extension_main::-webkit-scrollbar-thumb {
+    background-color: var(--color-hover);
 }
 
 
-/* dir and item */
-.dir[data-open="0"]>:is(.dir, .item) {
-    display: none;
+/*DIR*/
+.dir>summary {
+    --buttons-right: 5px;
+    display: flex;
+    align-items: center;
+    outline-offset: -1px;
+    padding-right: 10px;
+    border-radius: var(--border-radius);
 }
-
-.dir[open]>.header {
-    position:sticky;
-    z-index: 2;
+.dir:not([open])>summary {
+    position:relative;
+}
+.dir[open]>summary {
+    position: sticky;
     top: -5px;
+}
+.dir[open]>summary:not(:hover) {
+    z-index: 1;
+}
+.dir[open]>summary:hover {
+    z-index: 4;
+}
+.dir>summary:not(:hover) {
     background-color: var(--color-bg);
 }
-
-:is(.dir:not([open])>.header, .item) {
-    position: relative;
+.dir>summary:hover {
+    background-color: var(--color-hover);
 }
 
-:is(.dir>.header, .item):hover {
-    background: var(--color-hover);
+.dir>summary .content::before {
+    content:"";
+    position: absolute;
+    height: 70%;
+    width: 30px;
+    right: 0;
+    background: linear-gradient(to left, var(--color-bg), transparent);
 }
 
-:is(.dir>.header,.item) .content {
+.dir>summary .content {
     position: relative;
     display: flex;
     align-items: center;
     width: 100%;
-    height: var(--e-height);
-    padding-right: 10px;
-    padding-block: 0;
-    outline-offset: -1px;
+    height: var(--item-height);
+    overflow: hidden;
+}
+.dir>summary .content>*{
+    flex-shrink: 0;
 }
 
-:is(.dir>.header,.item):not(:hover) .right {
+.dir>summary .title {
+    padding-left: 5px;
+    white-space: nowrap;
+}
+
+.extension_main[css-nonumber] .dir [name="number"] {
     display: none;
 }
-
-:is(.dir>.header, .item):hover .right {
-    display: flex;
+.extension_main:not([css-nonumber]) .dir [name="number"] {
+    margin-left: 3px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    min-width: 15px;
+    align-self: flex-end;
 }
 
-:is(.dir>.header, .item) .right {
-    position: absolute;
-    top: 5px;
-    right: var(--rb-right);
-    background: var(--color-hover);
-}
-
-:is(.dir>.header, .item) .right::after {
-    content:"";
-    position: absolute;
-    height: 100%;
-    width: 10px;
-    left: -10px;
-    background: linear-gradient(to left, var(--color-hover), transparent);
-}
-
-:is(.dir, .item) .right>button {
-    position: relative;
-    padding: 5px;
-    z-index: 1;
-}
-
-:is(.dir, .item) .right>button:not(:hover) {
-    background: transparent;
-}
-
-:is(.dir, .item) .right>button:hover {
-    background: var(--color-hover-l);
-}
-
-:is(.dir, .item) :is(.right,.more) button>.icon {
-    width: var(--icon-size-s);
-}
-
-/* dir */
-.dir {
-    position: relative;
-}
-
-.dir>.header {
-    display:flex;
-}
-
-.dir>.header>button {
-    position: relative;
-    background: transparent;
-}
-
-.dir>.header .content :is(.icon-folder, .icon-folder-open) {
-    width: var(--icon-size-n);
-    margin: 0 5px;
-}
-
-.dir>.header .content .icon-triangle {
+.dir .icon-triangle {
     padding: 2px;
-    width: var(--icon-size-s);
-}
-
-.dir>.header .content .icon-triangle {
+    width: var(--icon-size-small);
     transition: transform 200ms ease-out;
 }
-
-.dir:not([open])>.header .content .icon-triangle {
+:where(
+    .dir[open]>summary>.content .icon-folder-close,
+    .dir:not([open])>summary>.content .icon-folder-open
+) {
+    display: none;
+}
+.dir:not([open])>summary>.content .icon-triangle {
     transform: rotate(90deg);
 }
-
-.dir[open]>.header .content .icon-triangle {
+.dir[open]>summary>.content .icon-triangle {
     transform: rotate(180deg);
 }
 
-:where(
-    .dir:not([open])>.header .content .icon-folder,
-    .dir[open]>.header .content .icon-folder-open
-) {
-    display: block;
+.dir .icon-folder {
+    margin-left: 5px;
+    width: var(--icon-size);
 }
 
-:where(
-    .dir[open]>.header .content .icon-folder,
-    .dir:not([open])>.header .content .icon-folder-open
-) {
+.dir>summary>.buttons {
+    position: absolute;
+    background-color: var(--color-hover);
+    right: var(--buttons-right);
+}
+.dir>summary:not(:hover)>.buttons {
     display: none;
 }
-
-.dir>.header .content .title {
-    font-size: var(--font-size-n);
+.dir>summary:hover>.buttons {
+    display: flex;
+    align-items: center;
+}
+.dir>summary>.buttons::before {
+    content:"";
+    position: absolute;
+    height: 100%;
+    width: 30px;
+    left: -30px;
+    background: linear-gradient(to left, var(--color-hover), transparent);
+}
+.dir>summary .buttons .icon {
+    width: var(--icon-size-small);
 }
 
-:is(
-.dir>.header:has( .right .bmore:hover) .more:not(:hover),
-.dir>.header .more:hover
+.dir>summary:has( .buttons_more:hover) .buttons [title="more"] {
+    background: var(--color-hover-l);
+}
+
+.dir>summary:has( .buttons [title="more"]):has( .buttons [title="more"]:not(:hover)) .buttons_more:not(:hover) {
+    display: none;
+}
+:where(
+    .dir>summary:has( .buttons [title="more"]:hover) .buttons_more,
+    .dir>summary .buttons_more:hover
 ) {
     display: flex;
     flex-direction: column;
+    border: 2px solid var(--color-hover-l);
+    padding: 5px;
 }
 
-.dir>.header:has( .right .bmore:not(:hover)) .more:not(:hover) {
-    display: none;
-}
-
-.dir>.header:has( .more:hover) .right .bmore {
-    background: var(--color-hover-l);
-}
-
-.dir>.header .more {
+.dir>summary .buttons_more {
+    z-index: 4;
     position: absolute;
-    right: var(--rb-right);
-    z-index: 1;
-}
-
-.dir>.header .more>button {
-    position:relative;
-    display:flex;
-    align-items:Center;
-    font-size: var(--font-size-n);
-    padding: 5px 10px;
-}
-
-.dir>.header .more>button:not(:hover) {
-    background: var(--color-hover-l);
-}
-
-.dir>.header .more>button:hover {
+    right: 0;
     background: var(--color-hover);
+    border-radius: var(--border-radius);
+}
+.dir>summary .buttons_more[css-position="top"] {
+    top: 30px;
+}
+.dir>summary .buttons_more[css-position="bottom"] {
+    bottom: 30px;
 }
 
-.dir>.header .more .icon {
+.dir>summary .buttons_more button {
+    justify-content: flex-start;
+    width: 100%;
+}
+
+.dir>summary .buttons_more .icon {
+    width: var(--icon-size-small);
     margin-right: 5px;
 }
 
-/* item */
+/*ITEM*/
+.item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    border-radius: var(--border-radius);
+}
+.item:hover {
+    background-color: var(--color-hover);
+}
+.item:not(:hover) {
+    background-color: var(--color-bg);
+}
+.item:hover {
+    background-color: var(--color-hover);
+}
+
+.item .content {
+    display: flex;
+    align-items: center;
+    height: var(--item-height);
+    width: 100%;
+    padding-right: 10px;
+    outline-offset: -1px;
+}
+.item .content>* {
+    flex-shrink: 0;
+}
+
+.item .content span {
+    position: relative;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    width: 100%;
+}
+.item .content span::before {
+    content:"";
+    position: absolute;
+    height: 70%;
+    width: 30px;
+    right: 0;
+    background: linear-gradient(to left, var(--color-bg), transparent);
+}
 
 .item .title {
-    padding:0 10px;
-    overflow: hidden;
+    --font-size: 1.3rem;
+    padding-left: 5px;
     white-space: nowrap;
-    text-overflow: ellipsis;
-    font-size: var(--font-size-s)
 }
 
-
-/* Modals */
-
-.modal:not([data-display="0"]) {
+.item .buttons {
+    position: absolute;
+    background-color: var(--color-hover);
+    right: 5px;
+}
+.item:not(:hover) .buttons {
+    display: none;
+}
+.item:hover .buttons {
     display: flex;
+    align-items: center;
 }
-
-.modal {
+.item .buttons::before {
+    content:"";
     position: absolute;
     height: 100%;
-    width: 100%;
-    z-index: 3;
-    inset: 0;
-    align-items: center;
-    justify-content: center;
+    width: 30px;
+    left: -30px;
+    background: linear-gradient(to left, var(--color-hover), transparent);
 }
 
-.modal::before {
+.item .buttons .icon {
+    width: var(--icon-size-small);
+}
+
+/*MESSAGE*/
+.message:not([data-show]) {
+    display: none;
+}
+.message[data-show] {
+    position: absolute;
+    z-index: 6;
+    bottom: 10px;
+    left: 3%;
+    display: flex;
+    align-items: center;
+    width: 94%;
+    height: var(--item-height);
+    padding: 5px;
+    background: var(--color-bg-d);
+}
+
+.message h2 {
+    width: 100%;
+    overflow: hidden;
+    text-wrap: nowrap;
+}
+
+.message .icon {
+    width: var(--icon-size-small);
+}
+
+.message menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+}
+
+.message menu::before {
+    content:"";
+    position: absolute;
+    height: 100%;
+    width: 30px;
+    left: -30px;
+    background: linear-gradient(to left, var(--color-bg-d), transparent);
+}
+
+.message menu [name="undo"] {
+    margin-right: 5px;
+}
+
+/*MODAL*/
+.modal:not([data-open]) {
+    display: none;
+}
+.modal[data-open] {
+    display: flex;
+    justify-content: center;
+}
+.modal {
+    position: absolute;
+    z-index: 6;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+.modal::after {
     content: "";
     position: absolute;
     width: 100%;
     height: 100%;
-    background: var(--color-bg-d);
     opacity: 0.6;
+    background: var(--color-bg-d);
 }
 
 .modal section {
-    position: absolute;
-    background: var(--color-bg);
+    z-index: 1;
     padding: 10px;
+    background: var(--color-bg);
+    width: 90%;
+    border-radius: var(--border-radius);
 }
 
-.modal .icon {
-    width: var(--icon-size-n);
-}
-
-.modal :is(button,a) {
-    padding: 5px;
-}
-
-.modal :is(button,a):hover {
-    background-color: var(--color-hover);
-}
-
-.modal button:not(:hover) {
-    background-color: transparent;
-}
-
-.modal button {
-    position: relative;
-}
-
-/* modalConfig and modalEdit */
-
-
-.modal:not([data-show="0"]) .config {
-    display: none;
-}
-.modal:not([data-show="1"]) .edit {
-    display: none;
-}
-.modal:not([data-show="2"]) .create {
-    display: none;
-}
-
-.modal :is(.config,.edit) {
-    width: 300px;
-}
-/* modalConfig */
-
-.modal .config {
-    top: var(--header-height);
-}
-
-.modal .config :is(h2,p) {
-    font-size: var(--font-size-n);
-}
-
-.modal .config h2 {
+.modal section header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding-bottom: 10px;
 }
 
-.modal .config .field {
+/*MODAL INFO*/
+.modal.info section {
+    position: absolute;
+    transform: translateY(40px);
+    max-height: 520px;
+    overflow: auto;
+}
+
+.modal.info section::-webkit-scrollbar {
+    width: 8px;
+}
+.modal.info section::-webkit-scrollbar-thumb {
+    background-color: var(--color-hover);
+}
+
+.modal.info form {
+    padding-block: 10px;
+}
+
+.modal.info form .field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: 10px;
 }
 
-.modal .config .field input[type="checkbox"] {
+.modal.info form input[type="checkbox"] {
     width: 20px;
     height: 20px;
 }
 
-.modal .config hr {
+.modal.info footer {
+    padding-top: 20px;
+    border-top: 1px solid var(--color-hover-l);
+}
+.modal.info footer div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.modal.info footer a {
+    padding: 5px
+}
+
+.modal.info footer a:hover {
+    background: var(--color-hover);
+}
+
+.modal.info article {
+    padding: 10px 0;
+    display: flex;
+}
+
+.modal.info article h3 {
+    --font-size: 1.2rem;
+    flex-shrink: 0;
+    line-height: 2;
+}
+
+.modal.info article p {
+    padding-left: 10px;
+}
+
+.modal.info hr {
     margin: 10px 0;
+    border-color: var(--color);
 }
 
-.modal .config .socials {
-    padding-top: 5px;
+
+/*MODAL BTN*/
+.modal.btn {
+    align-items: center;
 }
 
-/* modalEdit */
-
-.modal .edit :is(h2, label) {
-    padding-bottom: 10px;
-}
-
-.modal .edit form {
+.modal.btn form {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-.modal .edit[data-edit="0"] .url {
-    display:none;
-}
-
-.modal .edit label {
+.modal.btn label {
     width: 100%;
+    padding-bottom: 10px;
 }
-
-.modal .edit label:focus-within p {
+.modal.btn label p {
+    padding-bottom: 5px;
+}
+.modal.btn label:focus-within p {
+    font-weight: 600;
+}
+.modal.btn label input {
+    width: 100%;
+    padding: 3px;
+}
+.modal.btn button {
     font-weight: 600;
 }
 
-.modal .edit label p {
-    font-size: var(--font-size-s);
-    padding-bottom: 5px;
+:where(
+    .modal.btn:not([data-modal="edit"]) .title-edit,
+    .modal.btn:not([data-modal="create"]) .title-create
+) {
+    display: none;
 }
 
-.modal .edit label input {
-    font-size: var(--font-size-n);
-    width: 100%;
-    padding: 3px;
+
+/*PROPERTIES*/
+[css-hidden] {
+    display: none !important;
 }
