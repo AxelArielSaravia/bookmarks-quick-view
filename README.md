@@ -1,4 +1,4 @@
-### ![Bookmarks Quick View](./media/promotion/marquee.png) v0.2.0
+### ![Bookmarks Quick View](./media/promotion/marquee.png) v0.2.1
 created by Axel Ariel Saravia
 
 ---

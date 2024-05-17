@@ -13,12 +13,12 @@ if [[ ! -d "./extension/images" ]]; then
     echo copy ./src/imaged to ./extension
 fi
 
-bun build ./src/main.js --outdir ./extension --minify
+bun build ./src/main.js --outdir ./extension --minify-whitespace
 if [[ $? == 0 ]]; then
     echo JS build and minify
 fi
 
-minify -o ./extension/index.html ./src/index.html
+minify --html-keep-end-tags -o ./extension/index.html ./src/index.html
 if [[ $? == 0 ]]; then
     echo index.html minified success
 fi

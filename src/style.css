@@ -100,7 +100,7 @@ button:not(:hover) {
 kbd {
     font-family: monospace;
     border: 1px solid var(--color);
-    border-radius: 5px;
+    border-radius: var(--border-radius);
     padding: 2px 4px;
 }
 
