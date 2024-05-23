@@ -1,7 +1,6 @@
-//@ts-check browser
 "use strict";
 
-const VERSION = "0.2.1";
+const VERSION = "0.2.2";
 
 const BEFOREEND = "beforeend";
 
@@ -80,6 +79,7 @@ let DOMSortContainer = [];
 let currenttab;
 
 const storage = {
+    version: VERSION,
     focusTabs: false,
     foldersBefore: false,
     beginning: false,
@@ -93,6 +93,7 @@ const storage = {
 /**
  * @type {(items: typeof storage) => undefined}*/
 function initStorage(items) {
+    const version = items.version;
     const open = items.open;
     const theme = items.theme;
     const focusTabs = items.focusTabs;
@@ -100,52 +101,49 @@ function initStorage(items) {
     const foldersBefore = items.foldersBefore;
     const showNumber = items.showNumber;
     let set = false;
-    if (open === STORAGE_OPEN_NEW || open === STORAGE_OPEN_CURRENT) {
-        storage.open = open;
-    } else {
+    if (version !== VERSION) {
         set = true;
-    }
-    if (showNumber !== undefined) {
-        storage.showNumber = showNumber;
     } else {
-        set = true;
-    }
-    if (theme === STORAGE_THEME_DARK || theme === STORAGE_THEME_LIGHT) {
-        storage.theme = theme;
-    } else {
-        set = true;
-    }
-    if (focusTabs !== undefined) {
-        storage.focusTabs = focusTabs;
-    } else {
-        set = true;
-    }
-    if (beginning !== undefined) {
-        storage.beginning = beginning;
-    } else {
-        set = true;
-    }
-    if (foldersBefore !== undefined) {
-        storage.foldersBefore = foldersBefore;
-    } else {
-        set = true;
+        if (open === STORAGE_OPEN_NEW || open === STORAGE_OPEN_CURRENT) {
+            storage.open = open;
+        } else {
+            set = true;
+        }
+        if (showNumber !== undefined) {
+            storage.showNumber = showNumber;
+        } else {
+            set = true;
+        }
+        if (theme === STORAGE_THEME_DARK || theme === STORAGE_THEME_LIGHT) {
+            storage.theme = theme;
+        } else {
+            set = true;
+        }
+        if (focusTabs !== undefined) {
+            storage.focusTabs = focusTabs;
+        } else {
+            set = true;
+        }
+        if (beginning !== undefined) {
+            storage.beginning = beginning;
+        } else {
+            set = true;
+        }
+        if (foldersBefore !== undefined) {
+            storage.foldersBefore = foldersBefore;
+        } else {
+            set = true;
+        }
     }
     if (set) {
         chrome.storage.local.set(storage, undefined);
     }
 }
 
-const DOMTemplateButtons = document.getElementById("template_buttons");
-if (DOMTemplateButtons === null) {
-    throw Error("#template_buttons does not exist");
-}
-
 /**
  * @type {null | HTMLElement}*/
 let relatedFocusTarget = null;
 
-/**
- * @type {(empty: boolean) => undefined} */
 function focusRelatedTarget() {
     relatedFocusTarget?.focus();
     relatedFocusTarget = null;
@@ -242,6 +240,11 @@ function getFavicon(src) {
     return url;
 }
 
+const DOMTemplateButtons = document.getElementById("template_buttons");
+if (DOMTemplateButtons === null) {
+    throw Error("#template_buttons does not exist");
+}
+
 const DirElement = {
     TYPE: "dir",
     /** @type {DocumentFragment} */
@@ -250,6 +253,9 @@ const DirElement = {
         let template = document.getElementById("template_dir");
         if (template === null) {
             throw Error("#template_dir does not exist");
+        }
+        if (template.content === null || template.content === undefined) {
+            throw Error("#template_dir does not have content");
         }
         return template.content;
     }()),
@@ -546,10 +552,12 @@ const ItemElement = {
     TYPE: "item",
     /** @type {DocumentFragment} */
     template: (function () {
-        /** @type{HTMLTemplateElement | null} */
         let template = document.getElementById("template_item");
         if (template === null) {
             throw Error("#template_item does not exist");
+        }
+        if (template.content === null || template.content === undefined) {
+            throw Error("#template_item does not have content");
         }
         return template.content;
     }()),
@@ -652,6 +660,12 @@ const DirModal = {
         return form;
     }()),
     /**
+     * @type {(title: string) => undefined} */
+    setCreateTitle(title) {
+        const DOMModalTitle = DirModal.MODAL.firstElementChild.firstElementChild.firstElementChild;
+        DOMModalTitle.textContent = `Create folder on "${title}"`;
+    },
+    /**
      * @throws{TypeError} A DOM element is null
      * @type{(DOMDir: HTMLElement) => undefined}*/
     openCreate(DOMDir) {
@@ -668,6 +682,7 @@ const DirModal = {
         HeaderNav.NAV.inert = true;
         Message.infocus = false;
 
+        DirModal.setCreateTitle(DOMDir.btnTitle);
         DirModal.MODAL?.setAttribute("data-open", "");
         DirModal.MODAL?.setAttribute("data-modal", "create");
 
@@ -760,6 +775,12 @@ const ItemModal = {
         return form;
     }()),
     /**
+     * @type {(title: string) => undefined} */
+    setCreateTitle(title) {
+        const DOMModalTitle = ItemModal.MODAL.firstElementChild.firstElementChild.firstElementChild;
+        DOMModalTitle.textContent = `Create bookmark on "${title}"`;
+    },
+    /**
      * @throws{TypeError} A DOM element is null
      * @type{(DOMItem: HTMLElement, empty: boolean) => undefined}*/
     openCreate(DOMDir, empty) {
@@ -783,6 +804,7 @@ const ItemModal = {
         HeaderNav.NAV.inert = true;
         Message.infocus = false;
 
+        ItemModal.setCreateTitle(DOMDir.btnTitle);
         ItemModal.MODAL?.setAttribute("data-open", "");
         ItemModal.MODAL?.setAttribute("data-modal", "create");
         ItemModal.FORM["title"].focus();
@@ -807,7 +829,7 @@ const ItemModal = {
         Message.infocus = false;
 
         ItemModal.MODAL?.setAttribute("data-open", "");
-        ItemModal.MODAL?.setAttribute("data-ItemModal", "edit");
+        ItemModal.MODAL?.setAttribute("data-modal", "edit");
 
         ItemModal.FORM["title"].value = DOMItem.btnTitle;
         ItemModal.FORM["url"].value = DOMItem.btnUrl
@@ -1168,11 +1190,13 @@ const Message = {
      * @type {(e: KeyboardEvent) => undefined | never} */
     onkeydown(e) {
         if (e.code === "Tab") {
-            if ((e.shiftKey && e.target.getAttribute("name") === "undo")
-                || e.target.getAttribute("name") === "close"
-            ) {
+            if (e.shiftKey && e.target.getAttribute("name") === "undo") {
                 Message.infocus = false;
                 focusRelatedTarget();
+            } else if (!e.shiftKey && e.target.getAttribute("name") === "close") {
+                Message.infocus = false;
+                focusRelatedTarget();
+                e.preventDefault();
             }
         } else if (e.code === COMMAND_MODAL_CLOSE) {
             Message.close();
@@ -1392,7 +1416,21 @@ const Main = {
         if (btnType === undefined) {
             return;
         }
-        if (e.code === COMMAND_BOOKMARK || e.code === COMMAND_BOOKMARK_EMPTY) {
+        if (e.code === "Space") {
+            if (btnType === DirElement.TYPE) {
+                const DOMSummary = target;
+                const DOMDir = target.parentElement;
+                if (DOMDir.hasAttribute("open")) {
+                    let y = (DOMDir.offsetTop
+                        - Main.MAIN.offsetTop
+                        - DOMSummary.clientHeight
+                    );
+                    if (Main.MAIN.scrollTop > y) {
+                        Main.MAIN.scroll(0, y);
+                    }
+                }
+            }
+        } else if (e.code === COMMAND_BOOKMARK || e.code === COMMAND_BOOKMARK_EMPTY) {
             if (e.ctrlKey) {
                 return
             }
@@ -1414,20 +1452,6 @@ const Main = {
                 relatedFocusTarget = target;
                 ItemModal.openCreate(DOMDir, e.code === COMMAND_BOOKMARK_EMPTY);
             }
-        } else if (e.code === "Space") {
-            if (btnType === DirElement.TYPE) {
-                const DOMSummary = target;
-                const DOMDir = target.parentElement;
-                if (DOMDir.hasAttribute("open")) {
-                    let y = (DOMDir.offsetTop
-                        - Main.MAIN.offsetTop
-                        - DOMSummary.clientHeight
-                    );
-                    if (Main.MAIN.scrollTop > y) {
-                        Main.MAIN.scroll(0, y);
-                    }
-                }
-            }
         } else if (e.code === COMMAND_FOLDER) {
             if (e.ctrlKey) {
                 return
@@ -1446,7 +1470,9 @@ const Main = {
                     DOMDir = target.parentElement.parentElement;
                 }
             }
-            if (DOMDir !== undefined && DOMDir.btnType === DirElement.TYPE) {
+            if (DOMDir !== undefined
+                && DOMDir.btnType === DirElement.TYPE
+            ) {
                 relatedFocusTarget = target;
                 DirModal.openCreate(DOMDir);
             }
@@ -1457,8 +1483,9 @@ const Main = {
             if (btnType === DirElement.TYPE) {
                 const DOMDir = target.parentElement;
                 if (DOMDir.noedit) {
+                    return;
                 }
-
+                relatedFocusTarget = DOMDir.firstElementChild;
                 DirModal.openEdit(DOMDir);
 
             } else if (btnType === ItemElement.TYPE)  {
@@ -1473,18 +1500,17 @@ const Main = {
             let DOMDir;
             if (btnType === DirElement.TYPE) {
                 DOMDir = target.parentElement;
+                if (DOMDir === undefined || DOMDir.noremove) {
+                        return;
+                }
                 if (DOMDir.nextElementSibling === null) {
                     const DOMParent = DOMDir?.parentElement;
                     relatedFocusTarget = DOMParent?.nextElementSibling?.firstElementChild;
                 } else {
                     relatedFocusTarget = DOMDir.nextElementSibling.firstElementChild;
                 }
-                if (DOMDir !== undefined) {
-                    if (DOMDir.noremove) {
-                        return;
-                    }
-                    Message.remove(btnType, DOMDir);
-                }
+                Message.remove(btnType, DOMDir);
+
             } else if (btnType === ItemElement.TYPE)  {
                 const DOMItem = target?.parentElement;
                 DOMDir = DOMItem?.parentElement;
@@ -1518,16 +1544,14 @@ const Main = {
                 return
             }
             if (btnType === DirElement.TYPE) {
-                const DOMDir = target.parentElement;
-                if (DOMDir !== undefined) {
-                    if (DOMDir.noopen) {
-                        return;
-                    }
-                    if (e.shiftKey) {
-                        DirElement.openItemsOnWindow(DOMDir, false);
-                    } else {
-                        DirElement.openItems(DOMDir);
-                    }
+                const DOMDir = target.parentElement || undefined;
+                if (DOMDir === undefined || DOMDir.noopen) {
+                    return;
+                }
+                if (e.shiftKey) {
+                    DirElement.openItemsOnWindow(DOMDir, false);
+                } else {
+                    DirElement.openItems(DOMDir);
                 }
             }
         } else if (e.code === COMMAND_OPEN_I) {
@@ -1535,13 +1559,11 @@ const Main = {
                 return
             }
             if (btnType === DirElement.TYPE) {
-                const DOMDir = target.parentElement;
-                if (DOMDir !== undefined) {
-                    if (DOMDir.noopen) {
-                        return;
-                    }
-                    DirElement.openItemsOnWindow(DOMDir, true);
+                const DOMDir = target.parentElement || undefined;
+                if (DOMDir === undefined || DOMDir.noopen) {
+                    return;
                 }
+                DirElement.openItemsOnWindow(DOMDir, true);
             }
         } else if (e.code === COMMAND_COPY) {
             if (!e.ctrlKey) {
@@ -1744,7 +1766,6 @@ Promise.all([
         Main.MAIN.addEventListener("keydown", Main.onkeydown, false);
 
         Message.MESSAGE.addEventListener("click", Message.onclick, false);
-        Message.MESSAGE.addEventListener("keyup", Message.onkeyup, false);
         Message.MESSAGE.addEventListener("keydown", Message.onkeydown, false);
 
         DirModal.MODAL.addEventListener("click", ModalOnclick, false);
