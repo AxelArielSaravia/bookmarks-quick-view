@@ -71,8 +71,8 @@ html.l {
 
 a {
     color: var(--color);
-    text-decoration: none;
 }
+
 select {
     padding: 4px;
 }
@@ -100,7 +100,7 @@ button:not(:hover) {
 kbd {
     font-family: monospace;
     border: 1px solid var(--color);
-    border-radius: var(--border-radius);
+    border-radius: var();
     padding: 2px 4px;
 }
 
@@ -131,11 +131,16 @@ summary::marker {
     align-items: center;
     justify-content: space-between;
     padding: 10px;
+    border-bottom: 1px solid var(--color-hover-l);
+    margin-bottom: 5px;
 }
 
 .extension_header h1 {
     font-weight: 600;
     padding: 5px;
+}
+.extension_header a:hover {
+    background-color: var(--color-hover);
 }
 
 .extension_header nav {
@@ -143,24 +148,26 @@ summary::marker {
     align-items: center;
 }
 
-.extension_main {
-    --item-height: 35px;
-    height: 546px;
-    padding: 5px;
-    border-top: 1px solid var(--color-hover-l);
-    line-height: 2;
-    overflow: auto;
-    user-select: none;
-}
 
-.extension_main::-webkit-scrollbar {
+#main::-webkit-scrollbar {
     width: 8px;
 }
 
-.extension_main::-webkit-scrollbar-thumb {
-    background-color: var(--color-hover);
+#main::-webkit-scrollbar-thumb {
+    background-color: var(--color-hover-l);
 }
 
+#main {
+    height: 541px;
+    padding: 0 5px 5px;
+    overflow: auto;
+}
+
+div[name="bookmarks"] {
+    --item-height: 35px;
+    line-height: 2;
+    user-select: none;
+}
 
 /*DIR*/
 .dir>summary {
@@ -176,7 +183,7 @@ summary::marker {
 }
 .dir[open]>summary {
     position: sticky;
-    top: -5px;
+    top: 0;
 }
 .dir[open]>summary:not(:hover) {
     z-index: 1;
@@ -217,10 +224,11 @@ summary::marker {
     white-space: nowrap;
 }
 
-.extension_main[css-nonumber] .dir [name="number"] {
+#section_bookmarks[css-nonumber] .dir [name="number"] {
     display: none;
 }
-.extension_main:not([css-nonumber]) .dir [name="number"] {
+
+#section_bookmarks:not([css-nonumber]) .dir [name="number"] {
     margin-left: 3px;
     font-size: 1.2rem;
     font-weight: 600;
@@ -340,6 +348,7 @@ summary::marker {
     width: 100%;
     padding-right: 10px;
     outline-offset: -1px;
+    text-decoration: none;
 }
 .item .content>* {
     flex-shrink: 0;
@@ -440,6 +449,83 @@ summary::marker {
     margin-right: 5px;
 }
 
+.section {
+    padding: 0 5px 5px;
+}
+
+.section>header {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 0 20px;
+    background: var(--color-bg);
+}
+.section>header::after {
+    content: "";
+    position: absolute;
+    bottom: 10px;
+    display: block;
+    width: 100%;
+    height: 1px;
+    background: var(--color-hover-l);
+}
+
+.section form {
+    padding-block: 10px;
+}
+
+.section form .field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+}
+
+.section form input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+}
+
+.section footer {
+    padding-top: 20px;
+    border-top: 1px solid var(--color-hover-l);
+}
+.section footer div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.section footer a {
+    padding: 5px
+}
+
+.section footer a:hover {
+    background: var(--color-hover);
+}
+
+.section article {
+    padding: 10px 0;
+    display: flex;
+}
+
+.section article h3 {
+    --font-size: 1.2rem;
+    flex-shrink: 0;
+    line-height: 2;
+}
+
+.section article p {
+    padding-left: 10px;
+}
+
+.section hr {
+    margin: 10px 0;
+    border-color: var(--color);
+}
+
+
 /*MODAL*/
 .modal:not([data-open]) {
     display: none;
@@ -479,75 +565,6 @@ summary::marker {
     padding-bottom: 10px;
 }
 
-/*MODAL INFO*/
-.modal.info section {
-    position: absolute;
-    transform: translateY(40px);
-    max-height: 520px;
-    overflow: auto;
-}
-
-.modal.info section::-webkit-scrollbar {
-    width: 8px;
-}
-.modal.info section::-webkit-scrollbar-thumb {
-    background-color: var(--color-hover);
-}
-
-.modal.info form {
-    padding-block: 10px;
-}
-
-.modal.info form .field {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px;
-}
-
-.modal.info form input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-}
-
-.modal.info footer {
-    padding-top: 20px;
-    border-top: 1px solid var(--color-hover-l);
-}
-.modal.info footer div {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-.modal.info footer a {
-    padding: 5px
-}
-
-.modal.info footer a:hover {
-    background: var(--color-hover);
-}
-
-.modal.info article {
-    padding: 10px 0;
-    display: flex;
-}
-
-.modal.info article h3 {
-    --font-size: 1.2rem;
-    flex-shrink: 0;
-    line-height: 2;
-}
-
-.modal.info article p {
-    padding-left: 10px;
-}
-
-.modal.info hr {
-    margin: 10px 0;
-    border-color: var(--color);
-}
-
-
 /*MODAL BTN*/
 .modal.btn {
     align-items: center;
@@ -578,8 +595,16 @@ summary::marker {
 }
 
 :where(
-    .modal.btn:not([data-modal="edit"]) .title-edit,
-    .modal.btn:not([data-modal="create"]) .title-create
+.modal.btn:not([data-modal=edit]) .title-edit,
+.modal.btn:not([data-modal=create]) .title-create
+){
+    display:none
+}
+
+:is(
+    [data-show="bookmarks"]>:not([name="bookmarks"]),
+    [data-show="more"]>:not([name="more"]),
+    [data-show="keyboard"]>:not([name="keyboard"]),
 ) {
     display: none;
 }

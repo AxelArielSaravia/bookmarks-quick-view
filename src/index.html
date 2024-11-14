@@ -285,7 +285,15 @@
     </head>
     <body>
         <header class="extension_header">
-            <h1>Bookmarks quick view</h1>
+            <h1>
+                <a
+                    href="https://chromewebstore.google.com/detail/bookmarks-quick-view/oboploabbffifnkmiipmbpoaihabhjpm"
+                    target="_blank"
+                    rel="noreferrer noopener"
+                >
+                    Bookmarks quick view
+                </a>
+            </h1>
             <nav id="header_nav">
                 <button
                     class="shell"
@@ -306,28 +314,6 @@
                     >
                         <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
                         <polyline points="9 2 9 10 12 7 15 10 15 2"></polyline>
-                    </svg>
-                </button>
-                <button
-                    class="shell"
-                    name="more"
-                    title="more"
-                    type="button"
-                    aria-label="options"
-                >
-                    <svg
-                        class="icon icon-ellipsis"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <circle cx="12" cy="12" r="1"/>
-                        <circle cx="19" cy="12" r="1"/>
-                        <circle cx="5" cy="12" r="1"/>
                     </svg>
                 </button>
                 <button
@@ -359,6 +345,28 @@
                 </button>
                 <button
                     class="shell"
+                    name="more"
+                    title="more"
+                    type="button"
+                    aria-label="options"
+                >
+                    <svg
+                        class="icon icon-ellipsis"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <circle cx="12" cy="12" r="1"/>
+                        <circle cx="19" cy="12" r="1"/>
+                        <circle cx="5" cy="12" r="1"/>
+                    </svg>
+                </button>
+                <button
+                    class="shell"
                     name="close"
                     title="close"
                     type="button"
@@ -380,140 +388,12 @@
                 </button>
             </nav>
         </header>
-        <main id="main" class="extension_main"></main>
-        <div id="message" class="message">
-            <h2>
-                <span class="remove">remove </span>
-                "<span class="container"></span>"
-            </h2>
-            <menu>
-                <button
-                    name="undo"
-                    type="submit"
-                    value="undo"
-                    class="shell"
-                    title="undo"
-                >undo</button>
-                <button
-                    name="close"
-                    type="submit"
-                    title="close"
-                    value="close"
-                    class="shell"
-                    aria-label="close"
-                >
-                    <svg
-                        class="icon icon-x"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewbox="0 0 24 24"
-                        fill="none"
-                        stroke="currentcolor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </menu>
-        </div>
-        <div
-            id="modal_dir"
-            class="modal btn"
-            data-action="close"
-            data-modal="edit"
-        >
-            <section>
-                <header>
-                    <h2 class="title-create">Create folder</h2>
-                    <h2 class="title-edit">Rename folder</h2>
-                    <button
-                        data-action="close"
-                        class="shell"
-                        title="close"
-                        type="button"
-                        aria-label="close"
-                    >
-                        <svg
-                            class="icon icon-x"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewbox="0 0 24 24"
-                            fill="none"
-                            stroke="currentcolor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
-                </header>
-                <form name="dir">
-                    <label class="title">
-                        <p>Title:</p>
-                        <input type="text" name="title" value="" required>
-                    </label>
-                    <button class="shell" name="close" type="submit">
-                        Done
-                    </button>
-                </form>
-            </section>
-        </div>
-        <div
-            id="modal_item"
-            class="modal btn"
-            data-action="close"
-            data-modal="edit"
-        >
-            <section>
-                <header>
-                    <h2 class="title-create">Create bookmark</h2>
-                    <h2 class="title-edit">Edit bookmark</h2>
-                    <button
-                        data-action="close"
-                        class="shell"
-                        title="close"
-                        type="button"
-                        aria-label="close"
-                    >
-                        <svg
-                            class="icon icon-x"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewbox="0 0 24 24"
-                            fill="none"
-                            stroke="currentcolor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    </button>
-                </header>
-                <form name="items">
-                    <label class="title">
-                        <p>Title:</p>
-                        <input type="text" name="title" value="" required>
-                    </label>
-                    <label class="url">
-                        <p>Url:</p>
-                        <input type="url" name="url" value="" required>
-                    </label>
-                    <button
-                        class="shell"
-                        name="close"
-                        type="submit"
-                    >
-                        Done
-                    </button>
-                </form>
-            </section>
-        </div>
-        <div id="modal_more" class="modal info more" data-action="close">
-            <section>
+        <main id="main" data-show="bookmarks">
+            <section id="section_bookmarks" name="bookmarks"></section>
+            <section id="section_more"
+                name="more"
+                class="section info more"
+            >
                 <header>
                     <h2>Configuration</h2>
                     <button
@@ -523,18 +403,19 @@
                         type="button"
                         aria-label="close"
                     >
-                        <svg
-                            class="icon icon-x"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewbox="0 0 24 24"
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            width="24" height="24"
+                            viewBox="0 0 24 24"
                             fill="none"
-                            stroke="currentcolor"
+                            stroke="currentColor"
                             stroke-width="2"
                             stroke-linecap="round"
                             stroke-linejoin="round"
+                            class="icon icon-arrow-left-from-line"
                         >
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                            <path d="m9 6-6 6 6 6"/>
+                            <path d="M3 12h14"/>
+                            <path d="M21 19V5"/>
                         </svg>
                     </button>
                 </header>
@@ -575,9 +456,9 @@
                     </div>
                 </form>
                 <footer>
-                    <p class="version">v0.2.1</p>
+                    <p class="version">v0.2.3</p>
                     <div>
-                        <p>created by <strong>axel ariel saravia</strong></p>
+                        <p>created by <strong>Axel Ariel Saravia</strong></p>
                         <a
                             href="https://github.com/axelarielsaravia/bookmarks-quick-view"
                             target="_blank"
@@ -600,28 +481,26 @@
                     </div>
                 </footer>
             </section>
-        </div>
-        <div
-            id="modal_keyboard"
-            class="modal info keyboard"
-            data-action="close"
-        >
-            <section>
+            <section id="section_keyboard"
+                name="keyboard"
+                class="section info keyboard"
+            >
                 <header>
                     <h2>Keyboard Shortcuts</h2>
                     <button class="shell" data-action="close" type="button">
-                        <svg
-                            class="icon icon-x"
-                            xmlns="http://www.w3.org/2000/svg"
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                            width="24" height="24"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
                             stroke-width="2"
                             stroke-linecap="round"
                             stroke-linejoin="round"
+                            class="icon icon-arrow-left-from-line"
                         >
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                            <path d="m9 6-6 6 6 6"/>
+                            <path d="M3 12h14"/>
+                            <path d="M21 19V5"/>
                         </svg>
                     </button>
                 </header>
@@ -733,7 +612,7 @@
                 <article>
                     <h3><kbd>m</kbd></h3>
                     <p>
-                        open or close the "more (<svg
+                        open or close the "more modal <svg
                             class="icon icon-ellipsis"
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 24 24"
@@ -746,13 +625,13 @@
                             <circle cx="12" cy="12" r="1"/>
                             <circle cx="19" cy="12" r="1"/>
                             <circle cx="5" cy="12" r="1"/>
-                        </svg>) modal".
+                        </svg>".
                     </p>
                 </article>
                 <article>
                     <h3><kbd>k</kbd></h3>
                     <p>
-                        open or close the "keyboard (<svg
+                        open or close the "keyboard modal <svg
                             xmlns="http://www.w3.org/2000/svg"
                             class="icon icon-keyboard"
                             viewBox="0 0 24 24"
@@ -771,10 +650,141 @@
                             <path d="M7 16h10"/>
                             <path d="M8 12h.01"/>
                             <rect width="20" height="16" x="2" y="4" rx="2"/>
-                        </svg>) modal".
+                        </svg>".
                     </p>
                 </article>
             </section>
+        </main>
+        <div
+            id="modal_dir"
+            class="modal btn"
+            data-action="close"
+            data-modal="edit"
+        >
+            <section>
+                <header>
+                    <h2 class="title-create">Create folder</h2>
+                    <h2 class="title-edit">Rename folder</h2>
+                    <button
+                        data-action="close"
+                        class="shell"
+                        title="close"
+                        type="button"
+                        aria-label="close"
+                    >
+                        <svg
+                            class="icon icon-x"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewbox="0 0 24 24"
+                            fill="none"
+                            stroke="currentcolor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </header>
+                <form name="dir">
+                    <label class="title">
+                        <p>Title:</p>
+                        <input type="text" name="title" value="" required>
+                    </label>
+                    <button class="shell" name="close" type="submit">
+                        Done
+                    </button>
+                </form>
+            </section>
+        </div>
+        <div
+            id="modal_item"
+            class="modal btn"
+            data-action="close"
+            data-modal="edit"
+        >
+            <section>
+                <header>
+                    <h2 class="title-create">Create bookmark</h2>
+                    <h2 class="title-edit">Edit bookmark</h2>
+                    <button
+                        data-action="close"
+                        class="shell"
+                        title="close"
+                        type="button"
+                        aria-label="close"
+                    >
+                        <svg
+                            class="icon icon-x"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewbox="0 0 24 24"
+                            fill="none"
+                            stroke="currentcolor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </header>
+                <form name="items">
+                    <label class="title">
+                        <p>Title:</p>
+                        <input type="text" name="title" value="" required>
+                    </label>
+                    <label class="url">
+                        <p>Url:</p>
+                        <input type="url" name="url" value="" required>
+                    </label>
+                    <button
+                        class="shell"
+                        name="close"
+                        type="submit"
+                    >
+                        Done
+                    </button>
+                </form>
+            </section>
+        </div>
+        <div id="message" class="message">
+            <h2>
+                <span class="remove">remove </span>
+                "<span class="container"></span>"
+            </h2>
+            <menu>
+                <button
+                    name="undo"
+                    type="submit"
+                    value="undo"
+                    class="shell"
+                    title="undo"
+                >undo</button>
+                <button
+                    name="close"
+                    type="submit"
+                    title="close"
+                    value="close"
+                    class="shell"
+                    aria-label="close"
+                >
+                    <svg
+                        class="icon icon-x"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewbox="0 0 24 24"
+                        fill="none"
+                        stroke="currentcolor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </menu>
         </div>
     </body>
 </html>

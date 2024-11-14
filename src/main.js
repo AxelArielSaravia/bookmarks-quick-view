@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "0.2.2";
+const VERSION = "0.2.3";
 
 const BEFOREEND = "beforeend";
 
@@ -9,8 +9,8 @@ const UNDO_TIMEOUT_MS = 4000;
 const CSS_PADDING = 10;
 
 const COMMAND_MODAL_CLOSE = "KeyQ";
-const COMMAND_MODAL_MORE = "KeyM";
-const COMMAND_MODAL_KEYBOARD = "KeyK";
+const COMMAND_SECTION_MORE = "KeyM";
+const COMMAND_SECTION_KEYBOARD = "KeyK";
 const COMMAND_EDIT = "KeyE";
 const COMMAND_FOLDER = "KeyF";
 const COMMAND_BOOKMARK = "KeyB";
@@ -52,13 +52,18 @@ const createItemDetails = {
 };
 
 const movedestination = {
-    index: 0,
+    index: 1,
     parentId: "",
 };
 
 const tabProperties = {
     active: false,
-    url: ""
+    url: "",
+    index: undefined
+};
+const tabUpdateProperties = {
+    active: false,
+    url: "",
 };
 
 const windowCreateData = {
@@ -93,6 +98,7 @@ const storage = {
 /**
  * @type {(items: typeof storage) => undefined}*/
 function initStorage(items) {
+
     const version = items.version;
     const open = items.open;
     const theme = items.theme;
@@ -101,7 +107,8 @@ function initStorage(items) {
     const foldersBefore = items.foldersBefore;
     const showNumber = items.showNumber;
     let set = false;
-    if (version !== VERSION) {
+    "".includes()
+    if (!version.startsWith("0.2.")) {
         set = true;
     } else {
         if (open === STORAGE_OPEN_NEW || open === STORAGE_OPEN_CURRENT) {
@@ -111,7 +118,6 @@ function initStorage(items) {
         }
         if (showNumber !== undefined) {
             storage.showNumber = showNumber;
-        } else {
             set = true;
         }
         if (theme === STORAGE_THEME_DARK || theme === STORAGE_THEME_LIGHT) {
@@ -134,6 +140,9 @@ function initStorage(items) {
         } else {
             set = true;
         }
+        if (version !== VERSION) {
+            set = true;
+        }
     }
     if (set) {
         chrome.storage.local.set(storage, undefined);
@@ -142,11 +151,10 @@ function initStorage(items) {
 
 /**
  * @type {null | HTMLElement}*/
-let relatedFocusTarget = null;
-
+let relatedFocusTarget = document.body;
 function focusRelatedTarget() {
     relatedFocusTarget?.focus();
-    relatedFocusTarget = null;
+    relatedFocusTarget = document.body;
 }
 
 /**
@@ -206,8 +214,12 @@ function quicksort(a, fst, lst) {
  * ) => undefined}*/
 function openLink(tabProp, open, ctrl) {
     if ((open === STORAGE_OPEN_NEW) === ctrl) {
-        chrome.tabs.update(undefined, tabProp, undefined);
+        tabUpdateProperties.url = tabProp.url;
+        chrome.tabs.update(undefined, tabUpdateProperties, undefined);
     } else {
+        if (tabProp.index) {
+            tabProp.index += 1;
+        }
         chrome.tabs.create(tabProp, undefined);
     }
 }
@@ -215,20 +227,25 @@ function openLink(tabProp, open, ctrl) {
 /**
  * @type {(target: HTMLElement | undefined) => undefined}*/
 function closeModal(target) {
-    Main.MAIN.inert = false;
+    SectionBookmarks.SECTION.inert = false;
     HeaderNav.NAV.inert = false;
     target?.removeAttribute("data-open");
     focusRelatedTarget();
 }
 
-/**
- * @throws {TypeError} A DOM element is null
- * @type {(e: MouseEvent) => undefined}*/
+/** @type {(e: mouseevent) => undefined}*/
 function ModalOnclick(e) {
     const target = e.target;
     const action = target.getAttribute("data-action");
     if (action === "close") {
         closeModal(e.currentTarget);
+    }
+}
+
+/** @type {(e: mouseevent) => undefined}*/
+function SectionOnclick(e) {
+    if (e.target.getAttribute("data-action") === "close") {
+        Main.change("bookmarks");
     }
 }
 
@@ -387,7 +404,7 @@ const DirElement = {
         const DOMDir = DirModal.target;
         DirModal.target = undefined;
         DOMDir.changeTitle(btnode.title);
-        closeModal(DirModal.MODAL);
+        closeModal(DirModal.SECTION);
     },
     /**
      * @throw {TypeError} A DOM element is null
@@ -417,7 +434,7 @@ const DirElement = {
             DOMParent.appendChild(DOMDir);
         }
 
-        closeModal(DirModal.MODAL);
+        closeModal(DirModal.SECTION);
     },
     /**
      * @throw {TypeError} A DOM element is null
@@ -440,7 +457,7 @@ const DirElement = {
             while (i < DOMParent.childElementCount) {
                 let child = DOMParent.children[i];
                 child.btnIndex += 1;
-                i += 1;
+                i += 2;
             }
             const DOMBefore = DOMParent.children[btnode.index];
             DOMParent.insertBefore(DOMItem, DOMBefore.nextElementSibling);
@@ -448,7 +465,7 @@ const DirElement = {
             DOMParent.appendChild(DOMItem);
         }
 
-        closeModal(ItemModal.MODAL);
+        closeModal(ItemModal.SECTION);
     },
     /**
      * @throw {TypeError} A DOM element is null
@@ -459,6 +476,9 @@ const DirElement = {
                 continue;
             }
             tabProperties.url = child.btnUrl;
+            if (tabProperties.index) {
+                tabProperties.index += 1;
+            }
             chrome.tabs.create(tabProperties);
         }
     },
@@ -613,7 +633,7 @@ const ItemElement = {
     edit(btnode) {
         const DOMItem = ItemModal.target;
         DOMItem.edit(btnode.title, btnode.url);
-        closeModal(ItemModal.MODAL);
+        closeModal(ItemModal.SECTION);
     },
     prototype: {
         /**
@@ -644,7 +664,7 @@ const DirModal = {
     target: undefined,
 
     /** @type {HTMLDivElement} */
-    MODAL: (function () {
+    SECTION: (function () {
         let modal = document.getElementById("modal_dir");
         if (modal === null) {
             throw Error("#modal_dir does not exist");
@@ -662,7 +682,7 @@ const DirModal = {
     /**
      * @type {(title: string) => undefined} */
     setCreateTitle(title) {
-        const DOMModalTitle = DirModal.MODAL.firstElementChild.firstElementChild.firstElementChild;
+        const DOMModalTitle = DirModal.SECTION.firstElementChild.firstElementChild.firstElementChild;
         DOMModalTitle.textContent = `Create folder on "${title}"`;
     },
     /**
@@ -678,13 +698,13 @@ const DirModal = {
         DirModal.target = DOMDir;
         DirModal.depth = DOMDir.depth;
 
-        Main.MAIN.inert = true;
+        SectionBookmarks.SECTION.inert = true;
         HeaderNav.NAV.inert = true;
         Message.infocus = false;
 
         DirModal.setCreateTitle(DOMDir.btnTitle);
-        DirModal.MODAL?.setAttribute("data-open", "");
-        DirModal.MODAL?.setAttribute("data-modal", "create");
+        DirModal.SECTION?.setAttribute("data-open", "");
+        DirModal.SECTION?.setAttribute("data-modal", "create");
 
         DirModal.FORM.reset();
         DirModal.FORM["title"].focus();
@@ -703,13 +723,13 @@ const DirModal = {
         DirModal.depth = DOMDir.depth;
         DirModal.prevTitle = DOMDir.btnTitle;
 
-        Main.MAIN.inert = true;
+        SectionBookmarks.SECTION.inert = true;
         HeaderNav.NAV.inert = true;
         Message.infocus = false;
 
-        DirModal.MODAL?.setAttribute("data-open", "");
-        DirModal.MODAL?.setAttribute("data-modal", "edit");
-        DirModal.MODAL.title = DOMDir.btnTitle;
+        DirModal.SECTION?.setAttribute("data-open", "");
+        DirModal.SECTION?.setAttribute("data-modal", "edit");
+        DirModal.SECTION.title = DOMDir.btnTitle;
 
         DirModal.FORM["title"].value = DOMDir.btnTitle;
         DirModal.FORM["title"].focus();
@@ -759,7 +779,7 @@ const ItemModal = {
     target: undefined,
 
     /** @type {HTMLDivElement} */
-    MODAL: (function () {
+    SECTION: (function () {
         let modal = document.getElementById("modal_item");
         if (modal === null) {
             throw Error("#modal_item does not exist");
@@ -777,7 +797,7 @@ const ItemModal = {
     /**
      * @type {(title: string) => undefined} */
     setCreateTitle(title) {
-        const DOMModalTitle = ItemModal.MODAL.firstElementChild.firstElementChild.firstElementChild;
+        const DOMModalTitle = ItemModal.SECTION.firstElementChild.firstElementChild.firstElementChild;
         DOMModalTitle.textContent = `Create bookmark on "${title}"`;
     },
     /**
@@ -800,13 +820,13 @@ const ItemModal = {
             ItemModal.FORM.reset();
         }
 
-        Main.MAIN.inert = true;
+        SectionBookmarks.SECTION.inert = true;
         HeaderNav.NAV.inert = true;
         Message.infocus = false;
 
         ItemModal.setCreateTitle(DOMDir.btnTitle);
-        ItemModal.MODAL?.setAttribute("data-open", "");
-        ItemModal.MODAL?.setAttribute("data-modal", "create");
+        ItemModal.SECTION?.setAttribute("data-open", "");
+        ItemModal.SECTION?.setAttribute("data-modal", "create");
         ItemModal.FORM["title"].focus();
     },
     /**
@@ -824,12 +844,12 @@ const ItemModal = {
         ItemModal.prevTitle = DOMItem.btnTitle;
         ItemModal.prevUrl = DOMItem.btnUrl;
 
-        Main.MAIN.inert = true;
+        SectionBookmarks.SECTION.inert = true;
         HeaderNav.NAV.inert = true;
         Message.infocus = false;
 
-        ItemModal.MODAL?.setAttribute("data-open", "");
-        ItemModal.MODAL?.setAttribute("data-modal", "edit");
+        ItemModal.SECTION?.setAttribute("data-open", "");
+        ItemModal.SECTION?.setAttribute("data-modal", "edit");
 
         ItemModal.FORM["title"].value = DOMItem.btnTitle;
         ItemModal.FORM["url"].value = DOMItem.btnUrl
@@ -877,13 +897,31 @@ const ItemModal = {
     },
 };
 
-const MoreModal = {
-    MODAL: (function () {
-        let modal = document.getElementById("modal_more");
-        if (modal === null) {
-            throw Error("#modal_more does not exist");
+const Main = {
+    MAIN: (function () {
+        let main = document.getElementById("main");
+        if (main === null) {
+            throw Error("#main does not exist");
         }
-        return modal;
+        return main;
+    }()),
+    change(target) {
+        if (target === "bookmarks"
+            || target === "more"
+            || target === "keyboard"
+        ) {
+            Main.MAIN.setAttribute("data-show", target);
+        }
+    }
+};
+
+const SectionMore = {
+    SECTION: (function () {
+        let section = document.getElementById("section_more");
+        if (section === null) {
+            throw Error("#section_more does not exist");
+        }
+        return section;
     }()),
     /** @type {HTMLFormElement} */
     FORM: (function () {
@@ -897,29 +935,19 @@ const MoreModal = {
      * @throws {TypeError} A DOM element is null
      * @type {(s: typeof storage) => undefined}*/
     init(s) {
-        MoreModal.FORM["theme"].value = s.theme;
-        MoreModal.FORM["number"].checked = s.showNumber;
-        MoreModal.FORM["open"].value = s.open;
-        MoreModal.FORM["focus"].checked = s.focusTabs;
-        MoreModal.FORM["beginning"].checked = s.beginning;
-        MoreModal.FORM["folders"].checked = s.foldersBefore;
+        SectionMore.FORM["theme"].value = s.theme;
+        SectionMore.FORM["number"].checked = s.showNumber;
+        SectionMore.FORM["open"].value = s.open;
+        SectionMore.FORM["focus"].checked = s.focusTabs;
+        SectionMore.FORM["beginning"].checked = s.beginning;
+        SectionMore.FORM["folders"].checked = s.foldersBefore;
     },
     open() {
-        if (relatedFocusTarget === null) {
-            if (document.activeElement === null
-                || document.activeElement === document.body
-            ) {
-                relatedFocusTarget = HeaderNav.NAV.children["more"];
-            } else {
-                relatedFocusTarget = document.activeElement;
-            }
+        if (Main.MAIN.getAttribute("data-show") === "bookmarks") {
+            relatedFocusTarget = document.activeElement;
         }
-        Main.MAIN.inert = true;
-        HeaderNav.NAV.inert = true;
-        Message.infocus = false;
-
-        MoreModal.MODAL?.setAttribute("data-open", "");
-        MoreModal.FORM["theme"].focus();
+        Main.change("more");
+        SectionMore.FORM["theme"].focus();
     },
     /**
      * @throws {TypeError} A DOM element is null
@@ -947,9 +975,9 @@ const MoreModal = {
         } else if (name === "number") {
             storage.showNumber = target.checked;
             if (target.checked) {
-                Main.MAIN?.removeAttribute("css-nonumber");
+                SectionBookmarks.SECTION?.removeAttribute("css-nonumber");
             } else {
-                Main.MAIN?.setAttribute("css-nonumber", "");
+                SectionBookmarks.SECTION?.setAttribute("css-nonumber", "");
             }
             storageChange = true;
         } else if (name === "open") {
@@ -969,6 +997,7 @@ const MoreModal = {
         } else if (name === "focus") {
             storage.focusTabs = target.checked;
             tabProperties.active = storage.focusTabs;
+            tabUpdateProperties.active = storage.focusTabs;
             windowCreateData.focused = storage.focusTabs;
             storageChange = true;
         } else if (name === "beginning") {
@@ -984,36 +1013,21 @@ const MoreModal = {
     }
 };
 
-const KeyboardModal = {
+const SectionKeyboard = {
     /** @type {HTMLDivElement} */
-    MODAL: (function () {
-        let modal = document.getElementById("modal_keyboard");
-        if (modal === null) {
-            throw Error("#modal_keyboard does not exist");
+    SECTION: (function () {
+        let section = document.getElementById("section_keyboard");
+        if (section === null) {
+            throw Error("#section_keyboard does not exist");
         }
-        return modal;
+        return section;
     }()),
     open() {
-        if (relatedFocusTarget === null) {
-            if (document.activeElement === null
-                || document.activeElement === document.body
-            ) {
-                relatedFocusTarget = HeaderNav.NAV.children["keyboard"];
-            } else {
-                relatedFocusTarget = document.activeElement;
-            }
+        if (Main.MAIN.getAttribute("data-show") === "bookmarks") {
+            relatedFocusTarget = document.activeElement;
         }
-
-        Main.MAIN.inert = true;
-        HeaderNav.NAV.inert = true;
-        Message.infocus = false;
-
-        KeyboardModal.MODAL?.setAttribute("data-open", "");
-        KeyboardModal.MODAL
-            .firstElementChild
-            .firstElementChild
-            .lastElementChild
-            .focus();
+        Main.change("keyboard");
+        SectionKeyboard.SECTION.firstElementChild.lastElementChild.focus();
     }
 };
 
@@ -1223,9 +1237,17 @@ const HeaderNav = {
             tabProperties.url = "about://bookmarks";
             openLink(tabProperties, storage.open, e.ctrlKey);
         } else if (name === "more") {
-            MoreModal.open();
+            if (Main.MAIN.getAttribute("data-show") === "more") {
+                Main.change("bookmarks");
+            } else {
+                SectionMore.open();
+            }
         } else if (name === "keyboard") {
-            KeyboardModal.open();
+            if (Main.MAIN.getAttribute("data-show") === "keyboard") {
+                Main.change("bookmarks");
+            } else {
+                SectionKeyboard.open();
+            }
         } else if (name === "close") {
             window.close();
         }
@@ -1237,19 +1259,22 @@ const HeaderNav = {
         let name = target?.getAttribute("name");
         if (name === "bookmarks") {
             tabProperties.url = "about://bookmarks";
+            if (tabProperties.index) {
+                tabProperties.index += 1;
+            }
             chrome.tabs.create(tabProperties, undefined);
         }
     }
 };
 
-const Main = {
+const SectionBookmarks = {
     /** @type {HTMLDivElement} */
-    MAIN: (function () {
-        const main = document.getElementById("main");
-        if (main === null) {
-            throw Error("#main does not exist");
+    SECTION: (function () {
+        const section = document.getElementById("section_bookmarks");
+        if (section === null) {
+            throw Error("#section_bookmarks does not exist");
         }
-        return main;
+        return section;
     }()),
     /**
      * @throws {TypeError} A DOM element is null
@@ -1263,6 +1288,9 @@ const Main = {
         e.preventDefault();
         const href = target?.getAttribute("href");
         tabProperties.url = href;
+        if (tabProperties.index) {
+            tabProperties.index += 1;
+        }
         chrome.tabs.create(tabProperties, undefined);
     },
     /**
@@ -1284,11 +1312,11 @@ const Main = {
                 const DOMDir = target.parentElement.parentElement;
                 if (DOMDir.hasAttribute("open")) {
                     let y = (DOMDir.offsetTop
-                        - Main.MAIN.offsetTop
+                        - SectionBookmarks.SECTION.offsetTop
                         - DOMSummary.clientHeight
                     );
-                    if (Main.MAIN.scrollTop > y) {
-                        Main.MAIN.scroll(0, y);
+                    if (SectionBookmarks.SECTION.scrollTop > y) {
+                        SectionBookmarks.SECTION.scroll(0, y);
                     }
                 }
             }
@@ -1422,11 +1450,11 @@ const Main = {
                 const DOMDir = target.parentElement;
                 if (DOMDir.hasAttribute("open")) {
                     let y = (DOMDir.offsetTop
-                        - Main.MAIN.offsetTop
+                        - SectionBookmarks.SECTION.offsetTop
                         - DOMSummary.clientHeight
                     );
-                    if (Main.MAIN.scrollTop > y) {
-                        Main.MAIN.scroll(0, y);
+                    if (SectionBookmarks.SECTION.scrollTop > y) {
+                        SectionBookmarks.SECTION.scroll(0, y);
                     }
                 }
             }
@@ -1598,11 +1626,11 @@ const Main = {
                 const DOMDir = target.parentElement;
                 if (DOMDir.hasAttribute("open")) {
                     let y = (DOMDir.offsetTop
-                        - Main.MAIN.offsetTop
+                        - SectionBookmarks.SECTION.offsetTop
                         - DOMSummary.clientHeight
                     );
-                    if (Main.MAIN.scrollTop > y) {
-                        Main.MAIN.scroll(0, y);
+                    if (SectionBookmarks.SECTION.scrollTop > y) {
+                        SectionBookmarks.SECTION.scroll(0, y);
                     }
                 }
             }
@@ -1619,8 +1647,8 @@ const Main = {
             let DOMButtonsMore = target.parentElement.nextElementSibling;
             let top = (
                 Main.MAIN.offsetHeight
-                    + Main.MAIN.scrollTop
-                    - DOMButtonsMore.offsetHeight
+                + Main.MAIN.scrollTop
+                - DOMButtonsMore.offsetHeight
             );
             if (top < DOMDir.offsetTop) {
                 DOMButtonsMore.setAttribute("css-position", "bottom");
@@ -1690,33 +1718,40 @@ function createDOMRootTree(btroot) {
     if (fragment.children.length > 0) {
         fragment.children[0].setAttribute("open", "");
     }
-    Main.MAIN.appendChild(fragment);
+    SectionBookmarks.SECTION.appendChild(fragment);
 }
 
 /**
  * @type {(e: KeyboardEvent) => undefined} */
 function DOMOnkeyup(e) {
-    if (MoreModal.MODAL.hasAttribute("data-open")) {
-        if (e.code === COMMAND_MODAL_CLOSE || e.code === COMMAND_MODAL_MORE) {
-            closeModal(MoreModal.MODAL);
+    let show = Main.MAIN.getAttribute("data-show");
+    if (show === "more") {
+        if (e.code === COMMAND_SECTION_KEYBOARD) {
+            Main.change("keyboard");
+        } else if (e.code === COMMAND_MODAL_CLOSE || e.code === COMMAND_SECTION_MORE) {
+            Main.change("bookmarks");
+            focusRelatedTarget();
         }
-    } else if (KeyboardModal.MODAL.hasAttribute("data-open")) {
-        if (e.code === COMMAND_MODAL_CLOSE || e.code === COMMAND_MODAL_KEYBOARD) {
-            closeModal(KeyboardModal.MODAL);
+    } else if (show === "keyboard") {
+        if (e.code === COMMAND_SECTION_MORE) {
+            Main.change("more");
+        } else if (e.code === COMMAND_MODAL_CLOSE || e.code === COMMAND_SECTION_KEYBOARD) {
+            Main.change("bookmarks");
+            focusRelatedTarget();
         }
-    } else if (DirModal.MODAL.hasAttribute("data-open")) {
+    } else if (DirModal.SECTION.hasAttribute("data-open")) {
         if (e.ctrlKey && e.code === COMMAND_MODAL_CLOSE) {
-            closeModal(DirModal.MODAL);
+            closeModal(DirModal.SECTION);
         }
-    } else if (ItemModal.MODAL.hasAttribute("data-open")) {
+    } else if (ItemModal.SECTION.hasAttribute("data-open")) {
         if (e.ctrlKey && e.code === COMMAND_MODAL_CLOSE) {
-            closeModal(ItemModal.MODAL);
+            closeModal(ItemModal.SECTION);
         }
     } else {
-        if (e.code === COMMAND_MODAL_KEYBOARD) {
-            KeyboardModal.open();
-        } else if (e.code === COMMAND_MODAL_MORE) {
-            MoreModal.open();
+        if (e.code === COMMAND_SECTION_KEYBOARD) {
+            SectionKeyboard.open();
+        } else if (e.code === COMMAND_SECTION_MORE) {
+            SectionMore.open();
         } else if (e.code === COMMAND_UNDO) {
             Message.undo();
         }
@@ -1739,9 +1774,11 @@ Promise.all([
         let bmtree = data[1];
         currenttab = data[2][0];
 
+        tabProperties.index = currenttab.index;
+
         initStorage(items);
 
-        MoreModal.init(storage);
+        SectionMore.init(storage);
         document.firstElementChild?.setAttribute("class", storage.theme);
 
         if (bmtree.length === 1
@@ -1759,24 +1796,24 @@ Promise.all([
         HeaderNav.NAV.addEventListener("click", HeaderNav.onclick, false);
         HeaderNav.NAV.addEventListener("auxclick", HeaderNav.onauxclick, false);
 
-        Main.MAIN.addEventListener("click", Main.onclick, false);
-        Main.MAIN.addEventListener("auxclick", Main.onauxclick, false);
-        Main.MAIN.addEventListener("pointerover", Main.onpointerover, false);
-        Main.MAIN.addEventListener("keyup", Main.onkeyup, false);
-        Main.MAIN.addEventListener("keydown", Main.onkeydown, false);
+        SectionBookmarks.SECTION.addEventListener("click", SectionBookmarks.onclick, false);
+        SectionBookmarks.SECTION.addEventListener("auxclick", SectionBookmarks.onauxclick, false);
+        SectionBookmarks.SECTION.addEventListener("pointerover", SectionBookmarks.onpointerover, false);
+        SectionBookmarks.SECTION.addEventListener("keyup", SectionBookmarks.onkeyup, false);
+        SectionBookmarks.SECTION.addEventListener("keydown", SectionBookmarks.onkeydown, false);
 
         Message.MESSAGE.addEventListener("click", Message.onclick, false);
         Message.MESSAGE.addEventListener("keydown", Message.onkeydown, false);
 
-        DirModal.MODAL.addEventListener("click", ModalOnclick, false);
+        DirModal.SECTION.addEventListener("click", ModalOnclick, false);
         DirModal.FORM.addEventListener("submit", DirModal.onsubmit, false);
 
-        ItemModal.MODAL.addEventListener("click", ModalOnclick, false);
+        ItemModal.SECTION.addEventListener("click", ModalOnclick, false);
         ItemModal.FORM.addEventListener("submit", ItemModal.onsubmit, false);
 
-        MoreModal.MODAL.addEventListener("click", ModalOnclick, false);
-        MoreModal.FORM.addEventListener("change", MoreModal.onchange, false);
+        SectionMore.SECTION.addEventListener("click", SectionOnclick, false);
+        SectionMore.FORM.addEventListener("change", SectionMore.onchange, false);
 
-        KeyboardModal.MODAL.addEventListener("click", ModalOnclick, false);
+        SectionKeyboard.SECTION.addEventListener("click", SectionOnclick, false);
     }
 );

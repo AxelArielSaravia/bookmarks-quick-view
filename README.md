@@ -1,7 +1,9 @@
-### ![Bookmarks Quick View](./media/promotion/marquee.png) v0.2.1
-created by Axel Ariel Saravia
+# ![Bookmarks Quick View](./media/promotion/marquee.png)
 
----
+
+## Bookmarks Quick View [v0.2.3]
+
+created by Axel Ariel Saravia
 
 [*Bookmarks quick view*](https://chromewebstore.google.com/detail/bookmarks-quick-view/oboploabbffifnkmiipmbpoaihabhjpm)
 is a simple chrome extension for use and manage simple tasks with your browser bookmarks.
@@ -9,7 +11,7 @@ is a simple chrome extension for use and manage simple tasks with your browser b
 This extension is created for my own necessities. If you have some bugs or you need other utilities please contact me.
 
 
-### Some of the usabilities are:
+## Some of the usabilities are:
 - see all your bookmarks and bookmark folders.
 - delete a bookmark or a folder.
 - create folders.
@@ -55,6 +57,7 @@ This extension is created for my own necessities. If you have some bugs or you n
 | <kbd>Shift</kbd> + <kbd>i</kbd> | on folders, open all links in the current folder in a incognito window. |
 | <kbd>m</kbd> | open or close the "more modal". |
 | <kbd>k</kbd> | open or close the "keyboard modal". |
+
 ---
 
 The icons used in the extension are from
