@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "version": "0.2.3",
+    "version": "0.2.4",
     "name": "Bookmarks quick view",
-    "description": "view, delete, create, and sort bookmakrs",
+    "description": "view, delete, create, and sort bookmarks",
     "author": "axarsar",
     "action": {
         "default_popup": "index.html",

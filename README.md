@@ -1,7 +1,7 @@
 # ![Bookmarks Quick View](./media/promotion/marquee.png)
 
 
-## Bookmarks Quick View [v0.2.3]
+## Bookmarks Quick View [v0.2.4]
 
 created by Axel Ariel Saravia
 

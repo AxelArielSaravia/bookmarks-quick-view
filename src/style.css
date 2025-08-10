@@ -125,7 +125,7 @@ summary::marker {
 }
 
 
-/*BODY*/
+/*HEADER*/
 .extension_header {
     display: flex;
     align-items: center;
@@ -149,6 +149,15 @@ summary::marker {
 }
 
 
+.extension_header :is(
+  nav[data-open="keyboard"] [name="keyboard"]:not(:hover),
+  nav[data-open="more"]  [name="more"]:not(:hover)
+) {
+    background: var(--color-hover-l);
+    opacity: 0.85;
+}
+
+/*BODY*/
 #main::-webkit-scrollbar {
     width: 8px;
 }
@@ -229,11 +238,16 @@ div[name="bookmarks"] {
 }
 
 #section_bookmarks:not([css-nonumber]) .dir [name="number"] {
-    margin-left: 3px;
     font-size: 1.2rem;
     font-weight: 600;
-    min-width: 15px;
+    min-width: 2ch;
     align-self: flex-end;
+    text-align: center;
+    background: var(--color);
+    color: var(--color-bg);
+    border-radius: .5ch;
+    translate: -1ch -.5ch;
+    padding: 0 .3ch;
 }
 
 .dir .icon-triangle {

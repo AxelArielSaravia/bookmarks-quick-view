@@ -1,6 +1,6 @@
 "use strict";
 
-const VERSION = "0.2.3";
+const VERSION = "0.2.4";
 
 const BEFOREEND = "beforeend";
 
@@ -98,7 +98,6 @@ const storage = {
 /**
  * @type {(items: typeof storage) => undefined}*/
 function initStorage(items) {
-
     const version = items.version;
     const open = items.open;
     const theme = items.theme;
@@ -107,8 +106,9 @@ function initStorage(items) {
     const foldersBefore = items.foldersBefore;
     const showNumber = items.showNumber;
     let set = false;
-    "".includes()
-    if (!version.startsWith("0.2.")) {
+
+    console.info(items)
+    if (version === undefined || !version.startsWith("0.2.")) {
         set = true;
     } else {
         if (open === STORAGE_OPEN_NEW || open === STORAGE_OPEN_CURRENT) {
@@ -245,6 +245,12 @@ function ModalOnclick(e) {
 /** @type {(e: mouseevent) => undefined}*/
 function SectionOnclick(e) {
     if (e.target.getAttribute("data-action") === "close") {
+        let mainDataShow = Main.MAIN.getAttribute("data-show");
+        if ("keyboard" === mainDataShow
+            || "more" === mainDataShow
+        ) {
+            HeaderNav.NAV.setAttribute("data-open", "");
+        }
         Main.change("bookmarks");
     }
 }
@@ -1238,14 +1244,18 @@ const HeaderNav = {
             openLink(tabProperties, storage.open, e.ctrlKey);
         } else if (name === "more") {
             if (Main.MAIN.getAttribute("data-show") === "more") {
+                HeaderNav.NAV.setAttribute("data-open", "");
                 Main.change("bookmarks");
             } else {
+                HeaderNav.NAV.setAttribute("data-open", "more");
                 SectionMore.open();
             }
         } else if (name === "keyboard") {
             if (Main.MAIN.getAttribute("data-show") === "keyboard") {
+                HeaderNav.NAV.setAttribute("data-open", "");
                 Main.change("bookmarks");
             } else {
+                HeaderNav.NAV.setAttribute("data-open", "keyboard");
                 SectionKeyboard.open();
             }
         } else if (name === "close") {
@@ -1727,15 +1737,19 @@ function DOMOnkeyup(e) {
     let show = Main.MAIN.getAttribute("data-show");
     if (show === "more") {
         if (e.code === COMMAND_SECTION_KEYBOARD) {
+            HeaderNav.NAV.setAttribute("data-open", "keyboard");
             Main.change("keyboard");
         } else if (e.code === COMMAND_MODAL_CLOSE || e.code === COMMAND_SECTION_MORE) {
+            HeaderNav.NAV.setAttribute("data-open", "");
             Main.change("bookmarks");
             focusRelatedTarget();
         }
     } else if (show === "keyboard") {
         if (e.code === COMMAND_SECTION_MORE) {
+            HeaderNav.NAV.setAttribute("data-open", "more");
             Main.change("more");
         } else if (e.code === COMMAND_MODAL_CLOSE || e.code === COMMAND_SECTION_KEYBOARD) {
+            HeaderNav.NAV.setAttribute("data-open", "");
             Main.change("bookmarks");
             focusRelatedTarget();
         }
@@ -1749,8 +1763,10 @@ function DOMOnkeyup(e) {
         }
     } else {
         if (e.code === COMMAND_SECTION_KEYBOARD) {
+            HeaderNav.NAV.setAttribute("data-open", "keyboard");
             SectionKeyboard.open();
         } else if (e.code === COMMAND_SECTION_MORE) {
+            HeaderNav.NAV.setAttribute("data-open", "more");
             SectionMore.open();
         } else if (e.code === COMMAND_UNDO) {
             Message.undo();
